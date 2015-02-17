@@ -19,7 +19,7 @@ class Solver(object):
 
         Parameters
         ----------
-        model: models.Model
+        model : models.Model
             An instance of models.Model to solve.
         params : dict
             A dictionary of model parameters.
@@ -44,6 +44,23 @@ class Solver(object):
         return [self.model.independent_var] + self.model.dependent_vars
 
     @property
+    def model(self):
+        """
+        Symbolic representation of the model to solve.
+
+        :getter: Return the current model.
+        :setter: Set a new model to solve.
+        :type: models.Model
+
+        """
+        return self._model
+
+    @model.setter
+    def model(self, model):
+        """Set a new model to solve."""
+        self._model = self._validate_model(model)
+
+    @property
     def params(self):
         """
         Dictionary of model parameters.
@@ -62,6 +79,7 @@ class Solver(object):
         self._params = self._order_params(valid_params)
 
     def _function_factory(self, symbol, expr):
+        """Cache lamdified functions for numerical evaluation."""
         if self._cached_functions.get(symbol) is None:
             self._cached_functions[symbol] = self._lambdify_factory(expr)
         return self._cached_functions[symbol]
@@ -74,6 +92,15 @@ class Solver(object):
     def _order_params(params):
         """Cast a dictionary to an order dictionary."""
         return collections.OrderedDict(sorted(params.items()))
+
+    @staticmethod
+    def _validate_model(model):
+        """Validate the dictionary of parameters."""
+        if not isinstance(model, models.SymbolicModel):
+            mesg = "Attribute 'model' must have type models.SymbolicModel, not {}"
+            raise AttributeError(mesg.format(model.__class__))
+        else:
+            return model
 
     @staticmethod
     def _validate_params(value):
