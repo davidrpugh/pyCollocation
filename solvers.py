@@ -9,7 +9,7 @@ import models
 class Solver(object):
     """Base class for all Solvers."""
 
-    _cached_functions = {}  # not sure if this is good practice!
+    _cached_rhs_functions = {}  # not sure if this is good practice!
 
     _modules = [{'ImmutableMatrix': np.array}, 'numpy']
 
@@ -78,11 +78,12 @@ class Solver(object):
         valid_params = self._validate_params(value)
         self._params = self._order_params(valid_params)
 
-    def _function_factory(self, symbol, expr):
+    def _rhs_functions(self, symbol):
         """Cache lamdified functions for numerical evaluation."""
-        if self._cached_functions.get(symbol) is None:
-            self._cached_functions[symbol] = self._lambdify_factory(expr)
-        return self._cached_functions[symbol]
+        if self._cached_rhs_functions.get(symbol) is None:
+            eqn = self.model.rhs[symbol]
+            self._cached_rhs_functions[symbol] = self._lambdify_factory(eqn)
+        return self._cached_rhs_functions[symbol]
 
     def _lambdify_factory(self, expr):
         """Lambdify a symbolic expression."""

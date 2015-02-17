@@ -82,14 +82,14 @@ class SymbolicModel(object):
 
     def _validate_rhs(self, rhs):
         """Validate the rhs attribute."""
-        if not isinstance(rhs, list):
-            mesg = "Attribute must be of type `list` not {}"
+        if not isinstance(rhs, dict):
+            mesg = "Attribute must be of type `dict` not {}"
             raise AttributeError(mesg.format(rhs.__class__))
         elif not (len(rhs) == len(self.dependent_vars)):
             mesg = "Number of equations must equal number of dependent vars."
             raise ValueError(mesg)
         else:
-            return [self._validate_equation(eqn) for eqn in rhs]
+            return dict((var, self._validate_equation(eqn)) for var, eqn in rhs.iteritems())
 
 
 class DifferentialEquation(SymbolicModel):
@@ -105,7 +105,7 @@ class DifferentialEquation(SymbolicModel):
     @property
     def _symbolic_system(self):
         """Represents rhs as a symbolic matrix."""
-        return sym.Matrix(self.rhs)
+        return sym.Matrix([self.rhs[var] for var in self.dependent_vars])
 
     @property
     def jacobian(self):
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
     solow = DifferentialEquation(dependent_vars=[k],
                                  independent_var=t,
-                                 rhs=[k_dot])
+                                 rhs={k: k_dot})
 
     # define the Ramsey-Cass-Coopmans model
     mpk = sym.diff(y, k, 1)
@@ -153,4 +153,4 @@ if __name__ == '__main__':
 
     ramsey = DifferentialEquation(dependent_vars=[k, c],
                                   independent_var=t,
-                                  rhs=[k_dot, c_dot])
+                                  rhs={k: k_dot, c: c_dot})
