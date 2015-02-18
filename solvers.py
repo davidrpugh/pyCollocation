@@ -9,6 +9,10 @@ import models
 class Solver(object):
     """Base class for all Solvers."""
 
+    __lower_boundary_condition = None
+
+    __upper_boundary_condition = None
+
     _cached_rhs_functions = {}  # not sure if this is good practice!
 
     _modules = [{'ImmutableMatrix': np.array}, 'numpy']
@@ -29,6 +33,17 @@ class Solver(object):
         self.params = params
 
     @property
+    def _lower_boundary_condition(self):
+        """Cache lambdified lower boundary condition for numerical evaluation."""
+        condition = self.model.boundary_conditions['lower']
+        if condition is not None:
+            if self.__lower_boundary_condition is None:
+                self.__lower_boundary_condition = self._lambdify_factory(condition)
+            return self.__lower_boundary_condition
+        else:
+            return None
+
+    @property
     def _symbolic_args(self):
         """List of symbolic arguments used to lambdify expressions."""
         return self._symbolic_vars + self._symbolic_params
@@ -42,6 +57,17 @@ class Solver(object):
     def _symbolic_vars(self):
         """List of symbolic model variables."""
         return [self.model.independent_var] + self.model.dependent_vars
+
+    @property
+    def _upper_boundary_condition(self):
+        """Cache lambdified upper boundary condition for numerical evaluation."""
+        condition = self.model.boundary_conditions['upper']
+        if condition is not None:
+            if self.__upper_boundary_condition is None:
+                self.__upper_boundary_condition = self._lambdify_factory(condition)
+            return self.__upper_boundary_condition
+        else:
+            return None
 
     @property
     def model(self):
@@ -79,7 +105,7 @@ class Solver(object):
         self._params = self._order_params(valid_params)
 
     def _rhs_functions(self, symbol):
-        """Cache lamdified functions for numerical evaluation."""
+        """Cache lamdified rhs functions for numerical evaluation."""
         if self._cached_rhs_functions.get(symbol) is None:
             eqn = self.model.rhs[symbol]
             self._cached_rhs_functions[symbol] = self._lambdify_factory(eqn)
@@ -111,42 +137,3 @@ class Solver(object):
             raise AttributeError(mesg.format(value.__class__))
         else:
             return value
-
-
-if __name__ == '__main__':
-
-    # define some variables
-    t, k, c = sym.symbols('t, k, c')
-
-    # define some parameters
-    alpha, sigma = sym.symbols('alpha, sigma')
-    g, n, s, delta = sym.symbols('g, n, s, delta')
-
-    # intensive output has the CES form
-    y = (alpha * k**((sigma - 1) / sigma) + (1 - alpha))**(sigma / (sigma - 1))
-
-    # define the Solow model
-    k_dot = s * y - (g + n + delta) * k
-
-    solow = models.DifferentialEquation(dependent_vars=[k],
-                                        independent_var=t,
-                                        rhs=[k_dot])
-
-    solow_params = {'g': 0.02, 'n': 0.02, 's': 0.15, 'alpha': 0.15,
-                    'sigma': 2.0, 'delta': 0.04}
-    solow_solver = Solver(solow, solow_params)
-
-    # define the Ramsey-Cass-Coopmans model
-    rho, theta = sym.symbols('rho, theta')
-
-    mpk = sym.diff(y, k, 1)
-    k_dot = y - c - (g + n) * k
-    c_dot = ((mpk - rho - theta * g) / theta) * c
-
-    ramsey = models.DifferentialEquation(dependent_vars=[k, c],
-                                         independent_var=t,
-                                         rhs=[k_dot, c_dot])
-
-    ramsey_params = {'g': 0.02, 'n': 0.02, 's': 0.15, 'alpha': 0.15,
-                     'sigma': 2.0, 'delta': 0.04, 'rho': 0.03, 'theta': 2.5}
-    ramsey_solver = Solver(ramsey, ramsey_params)
