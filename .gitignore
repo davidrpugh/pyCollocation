@@ -1,2 +1,5 @@
 # ignore all .pyc files
 *.pyc
+
+# ignore ipython checkpoints
+.ipynb_checkpoints/
