@@ -104,16 +104,90 @@ class Solver(object):
         valid_params = self._validate_params(value)
         self._params = self._order_params(valid_params)
 
-    def _rhs_functions(self, symbol):
-        """Cache lamdified rhs functions for numerical evaluation."""
-        if self._cached_rhs_functions.get(symbol) is None:
-            eqn = self.model.rhs[symbol]
-            self._cached_rhs_functions[symbol] = self._lambdify_factory(eqn)
-        return self._cached_rhs_functions[symbol]
+    def _basis_derivative_factory(self, *args, **kwargs):
+        """Factory method for constructing derivatives of basis functions."""
+        raise NotImplementedError
+
+    def _basis_function_factory(self, *args, **kwargs):
+        """Factory method for constructing basis functions."""
+        raise NotImplementedError
+
+    def _construct_basis_funcs(self, coefs, *args, **kwargs):
+        """Return dict of basis functions given coefficients."""
+        basis_funcs = {}
+        for var, coef in coefs.iteritems():
+            basis_funcs[var] = self._basis_function_factory(coef, *args, **kwargs)
+        return basis_funcs
+
+    def _construct_basis_derivs(self, coefs, *args, **kwargs):
+        """Return dict of basis function derivatives given coefficients."""
+        basis_derivs = {}
+        for var, coef in coefs.iteritems():
+            basis_derivs[var] = self._basis_derivative_factory(coef, *args, **kwargs)
+        return basis_derivs
+
+    def _construct_residual_funcs(self, basis_derivs, basis_funcs):
+        """Return dict of residual functions for given basis funcs and derivs."""
+        residual_funcs = {}
+        for var, basis_deriv in basis_derivs.iteritems():
+            residual_funcs[var] = self._residual_function_factory(var, basis_derivs, basis_funcs)
+        return residual_funcs
+
+    def _evaluate_basis_funcs(self, basis_funcs, points):
+        """Return a list of basis functions evaluated at some points."""
+        return [basis_funcs[var](points) for var in self.model.dependent_vars]
+
+    def _evaluate_boundary_residuals(self, basis_funcs, domain):
+        """Return a list of boundary conditions evaluated on the domain."""
+        lower_residual = self._evaluate_lower_boundary_residual(basis_funcs, domain[0])
+        upper_residual = self._evaluate_upper_boundary_residual(basis_funcs, domain[1])
+
+        residuals = []
+        if lower_residual is not None:
+            residuals.append(lower_residual)
+        if upper_residual is not None:
+            residuals.append(upper_residual)
+
+        return residuals
+
+    def _evaluate_lower_boundary_residual(self, basis_funcs, lower_bound):
+        """Return the lower boundary condition evaluated on the domain."""
+        if self._lower_boundary_condition is not None:
+            args = (self._evaluate_basis_funcs(basis_funcs, lower_bound) +
+                    self.params.values())
+            return self._lower_boundary_condition(lower_bound, *args)
+
+    def _evaluate_residual_funcs(self, residual_funcs, nodes):
+        """Return a list of residual functions evaluated at collocation nodes."""
+        return [residual_funcs[var](nodes[var]) for var in self.model.dependent_vars]
+
+    def _evaluate_upper_boundary_residual(self, basis_funcs, upper_bound):
+        """Return the upper boundary condition evaluated on the domain."""
+        if self._upper_boundary_condition is not None:
+            args = (self._evaluate_basis_funcs(basis_funcs, upper_bound) +
+                    self.params.values())
+            return self._upper_boundary_condition(upper_bound, *args)
 
     def _lambdify_factory(self, expr):
         """Lambdify a symbolic expression."""
         return sym.lambdify(self._symbolic_args, expr, self._modules)
+
+    def _residual_function_factory(self, var, basis_derivs, basis_funcs):
+        """Generate the residual function for a given variable."""
+
+        def residual_function(t):
+            """Residual function evaluated at array of points t."""
+            args = self._evaluate_basis_funcs(basis_funcs, t) + self.params.values()
+            return basis_derivs[var](t) - self._rhs_functions(var)(t, *args)
+
+        return residual_function
+
+    def _rhs_functions(self, var):
+        """Cache lamdified rhs functions for numerical evaluation."""
+        if self._cached_rhs_functions.get(var) is None:
+            eqn = self.model.rhs[var]
+            self._cached_rhs_functions[var] = self._lambdify_factory(eqn)
+        return self._cached_rhs_functions[var]
 
     @staticmethod
     def _order_params(params):

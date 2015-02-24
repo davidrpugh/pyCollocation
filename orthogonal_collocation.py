@@ -1,7 +1,3 @@
-"""
-TODO: GET RID OF SIDE EFFECTS!
-
-"""
 import numpy as np
 from scipy import optimize
 
@@ -11,98 +7,9 @@ import solvers
 class OrthogonalCollocation(solvers.Solver):
     """Base class for OrthogonalCollocation classes."""
 
-    @property
-    def _coefs(self):
-        """Dictionary mapping a symbol to the coefs of its polynomial."""
-        print str(self.__coefs) + "get"
-        return self.__coefs
+    _valid_kinds = ["Chebyshev", "Hermite", "Laguerre", "Legendre"]
 
-    @_coefs.setter
-    def _coefs(self, coefs):
-        """Set a new dictionary of polynomial coefs."""
-        print str(coefs) + "set"
-        self.__coefs = coefs
-
-    @property
-    def _lower_boundary_residual(self):
-        if self._lower_boundary_condition is not None:
-            evaluated_polys = self._evaluate_orthogonal_polys(self.domain[0])
-            params = self.params.values()
-            args = evaluated_polys + params
-            return self._lower_boundary_condition(t, *args)
-        else:
-            return None
-
-    @property
-    def _upper_boundary_residual(self):
-        if self._upper_boundary_condition is not None:
-            evaluated_polys = self._evaluate_orthogonal_polys(self.domain[1])
-            params = self.params.values()
-            args = evaluated_polys + params
-            return self._upper_boundary_condition(t, *args)
-        else:
-            return None
-
-    @property
-    def _orthogonal_polys(self):
-        """Dictionary mapping a symbol to its approximating poly."""
-        polys = {}
-        for symbol, coef in self._coefs.iteritems():
-            polys[symbol] = self._orthogonal_poly_factory(coef)
-        return polys
-
-    @property
-    def _orthogonal_poly_derivs(self):
-        """Dictionary mapping a symbol to the derivative of its polynomial."""
-        derivs = {}
-        for symbol, poly in self._orthogonal_polys.iteritems():
-            derivs[symbol] = poly.deriv()
-        return derivs
-
-    @property
-    def _residual_funcs(self):
-        """Dictionary mappng a symbol to its residual function."""
-        residual_funcs = {}
-        for var in self.model.dependent_vars:
-            residual_funcs[var] = self._residual_function_factory(var)
-        return residual_funcs
-
-    @property
-    def domain(self):
-        """
-        Domain over which the polynomial approximation is valid.
-
-        :getter: Return the approximation domain.
-        :setter: Set a new approximation domain.
-        :type: list
-
-        """
-        return self._domain
-
-    @domain.setter
-    def domain(self, value):
-        """Set a new approximation domain."""
-        self._domain = self._validate_domain(value)
-
-    @property
-    def kind(self):
-        """
-        Kind of polynomials to use when constructing the approximation.
-
-        :getter: Return the current kind of orthogonal polynomials.
-        :setter: Set a new kind of orthogonal polynomials.
-        :type: string
-
-        """
-        return self._kind
-
-    @kind.setter
-    def kind(self, value):
-        """Set a new kind of orthogonal polynomials."""
-        self._kind = self._validate_kind(value)
-
-    @staticmethod
-    def _coefs_array_to_dict(coefs_array, degrees):
+    def _coefs_array_to_dict(self, coefs_array, degrees):
         """Split array of coefs into dict mapping symbols to coef arrays."""
         precondition = coefs_array.size == sum(degrees.values()) + len(degrees)
         assert precondition, "The coefs array must conform with degree list!"
@@ -125,121 +32,75 @@ class OrthogonalCollocation(solvers.Solver):
             coefs_list.append(coef_array)
         return np.hstack(coefs_list)
 
-    def _evaluate_orthogonal_polys(self, t):
-        """Evaluate approximating polynomials at an array of points t."""
-        evaluated_polys = []
-        for var in self.model.dependent_vars:
-            evaluated_polys.append(self._orthogonal_polys[var](t))
-        return evaluated_polys
-
-    def _evaluate_residual_funcs(self, residuals, nodes):
-        """Return residual function at some collocation nodes."""
-        evaluated_funcs = []
-        for var in self.model.dependent_vars:
-            evaluated_funcs.append(residuals[var](nodes[var]))
-        return np.hstack(evaluated_funcs)
-
-    def _orthogonal_poly_factory(self, coef):
-        """Returns an orthogonal polynomial given some coefficients."""
-        if self.kind == "Chebyshev":
-            poly = np.polynomial.Chebyshev(coef, self.domain)
-        elif self.kind == "Hermite":
-            poly = np.polynomial.Hermite(coef, self.domain)
-        elif self.kind == "Laguerre":
-            poly = np.polynomial.Laguerre(coef, self.domain)
+    @classmethod
+    def _basis_derivative_factory(cls, coef, kind, domain):
+        """Return an orthogonal polynomial given some coefficients."""
+        if kind == "Chebyshev":
+            poly = np.polynomial.Chebyshev(coef, domain).deriv()
+        elif kind == "Hermite":
+            poly = np.polynomial.Hermite(coef, domain).deriv()
+        elif kind == "Laguerre":
+            poly = np.polynomial.Laguerre(coef, domain).deriv()
+        elif kind == "Legendre":
+            poly = np.polynomial.Legendre(coef, domain).deriv()
         else:
-            poly = np.polynomial.Legendre(coef, self.domain)
+            mesg = "Attribute 'kind' must be one of {}, {}, {}, or {}."
+            raise AttributeError(mesg.format(*cls._valid_kinds))
         return poly
 
-    def _residual_function_factory(self, symbol):
-        """Generate the residual function for a given variable."""
-        # extract left and right hand sides of the residual function
-        lhs = self._orthogonal_poly_derivs[symbol]
-        rhs = self._rhs_functions(symbol)
-
-        def residual_function(t):
-            """Residual function evaluated at array of points t."""
-            evaluated_polys = self._evaluate_orthogonal_polys(t)
-            params = self.params.values()
-            args = evaluated_polys + params
-            return lhs(t) - rhs(t, *args)
-
-        return residual_function
-
-    @staticmethod
-    def _validate_domain(domain):
-        """Validate the domain attribute."""
-        lower, upper = domain
-        if not isinstance(domain, list):
-            mesg = ("Attribute 'domain' must have type list, not {}.")
-            raise AttributeError(mesg.format(domain.__class__))
-        elif not (lower < upper):
-            mesg = "Lower bound of the domain must be less than upper bound."
-            raise AttributeError(mesg)
+    @classmethod
+    def _basis_function_factory(cls, coef, kind, domain):
+        """Return an orthogonal polynomial given some coefficients."""
+        if kind == "Chebyshev":
+            poly = np.polynomial.Chebyshev(coef, domain)
+        elif kind == "Hermite":
+            poly = np.polynomial.Hermite(coef, domain)
+        elif kind == "Laguerre":
+            poly = np.polynomial.Laguerre(coef, domain)
+        elif kind == "Legendre":
+            poly = np.polynomial.Legendre(coef, domain)
         else:
-            return domain
-
-    @staticmethod
-    def _validate_kind(kind):
-        """Validate the kind attribute."""
-        valid_kinds = ['Chebyshev', 'Hermite', 'Legendre', 'Laguerre']
-        if not isinstance(kind, str):
-            mesg = ("Attribute 'kind' must have type str, not {}.")
-            raise AttributeError(mesg.format(kind.__class__))
-        elif kind not in valid_kinds:
             mesg = "Attribute 'kind' must be one of {}, {}, {}, or {}."
-            raise AttributeError(mesg.format(*valid_kinds))
-        else:
-            return kind
+            raise AttributeError(mesg.format(*cls._valid_kinds))
+        return poly
 
 
 class OrthogonalCollocationSolver(OrthogonalCollocation):
 
     @staticmethod
-    def _basis_coef(degree):
+    def _basis_polynomial_coefs(degrees):
         """Return coefficients for the basis polynomial of a given degree."""
-        basis_coef = np.zeros(degree + 1)
-        basis_coef[-1] = 1
-        return basis_coef
+        basis_coefs = {}
+        for var, degree in degrees.iteritems():
+            tmp_coef = np.zeros(degree + 1)
+            tmp_coef[-1] = 1
+            basis_coefs[var] = tmp_coef
+        return basis_coefs
 
-    def _collocation_nodes(self, degrees):
+    @staticmethod
+    def _collocation_nodes(polynomials):
         """Return roots of suitable basis polynomial as collocation nodes."""
-        basis_polys = self._construct_basis_polys(degrees)
-        nodes = {}
-        for var in self.model.dependent_vars:
-            poly = basis_polys[var]
-            nodes[var] = poly.roots()
-        return nodes
+        return {var: poly.roots() for var, poly in polynomials.iteritems()}
 
-    def _construct_basis_polys(self, degrees):
-        """Return a list of suitable basis polynomial of a given degree."""
-        basis_polys = {}
-        for symbol, degree in degrees.iteritems():
-            tmp_coef = self._basis_coef(degree)
-            basis_poly = self._orthogonal_poly_factory(tmp_coef)
-            basis_polys[symbol] = basis_poly
-
-        postcondition = len(basis_polys) == len(degrees)
-        assert postcondition, "Length of polys and degree lists must be equal!"
-
-        return basis_polys
-
-    def _evaluate_collocation_residuals(self, coefs_array, degrees):
+    def _evaluate_collocation_residuals(self, coefs_array, kind, domain, degrees):
         """Return residuals given coefs and degrees for approximating polys."""
-        # set the new values for polynomial coefs
-        self._coefs = self._coefs_array_to_dict(coefs_array, degrees)
+        # construct residual functions given new array of coefficients
+        coefs = self._coefs_array_to_dict(coefs_array, degrees)
+        funcs = self._construct_basis_funcs(coefs, kind, domain)
+        derivs = self._construct_basis_derivs(coefs, kind, domain)
+        residual_funcs = self._construct_residual_funcs(derivs, funcs)
 
-        # evaluate the residual funcs at collocation nodes
-        nodes = self._collocation_nodes(degrees)
-        resids = [self._evaluate_residual_funcs(self._residual_funcs, nodes)]
+        # find the appropriate collocation nodes
+        basis_coefs = self._basis_polynomial_coefs(degrees)
+        basis_polys = self._construct_basis_funcs(basis_coefs, kind, domain)
+        nodes = self._collocation_nodes(basis_polys)
 
-        # add the boundary condition residuals
-        if self._lower_boundary_residual is not None:
-            resids += self._lower_boundary_residual
-        if self._upper_boundary_residual is not None:
-            resids += self._upper_boundary_residual
+        # evaluate residual functions at the collocation nodes
+        residuals = self._evaluate_residual_funcs(residual_funcs, nodes)
+        boundary_residuals = self._evaluate_boundary_residuals(funcs, domain)
+        collocation_residuals = residuals + boundary_residuals
 
-        return np.hstack(resids)
+        return np.hstack(collocation_residuals)
 
     def _infer_degrees(self, coefs_dict):
         """Return dict mapping a symbol to degree of its approximating poly."""
@@ -249,13 +110,14 @@ class OrthogonalCollocationSolver(OrthogonalCollocation):
             degrees[var] = coef_array.size - 1
         return degrees
 
-    def solve(self, coefs_dict, method="hybr", **kwargs):
+    def solve(self, kind, coefs_dict, domain, method="hybr", **kwargs):
         """Solve a boundary value problem using orthogonal collocation."""
+        # solve for the optimal coefficients
         degrees = self._infer_degrees(coefs_dict)
         initial_guess = self._coefs_dict_to_array(coefs_dict)
         result = optimize.root(self._evaluate_collocation_residuals,
                                x0=initial_guess,
-                               args=(degrees,),
+                               args=(kind, domain, degrees),
                                method=method,
                                **kwargs)
         return result
@@ -292,8 +154,6 @@ if __name__ == '__main__':
     solow_params = {'g': 0.02, 's': 0.1, 'n': 0.02, 'alpha': 0.15, 'sigma': 2.0,
                     'delta': 0.04}
     solow_solver = OrthogonalCollocationSolver(solow, solow_params)
-    solow_solver.kind = "Chebyshev"
-    solow_solver.domain = [0, 100]
 
     # specify an initial guess
     def kstar(g, n, s, alpha, delta, sigma):
@@ -301,9 +161,12 @@ if __name__ == '__main__':
         return ((1 - alpha) / (((g + n + delta) / s)**rho - alpha))**(1 / rho)
     xs = np.linspace(0, 100, 1000)
     ys = kstar(**solow_params) - (kstar(**solow_params) - k0) * np.exp(-xs)
-    initial_poly = np.polynomial.Chebyshev.fit(xs, ys, 15, solow_solver.domain)
+    initial_poly = np.polynomial.Chebyshev.fit(xs, ys, 5, [0, 100])
     initial_solow_coefs = {k: initial_poly.coef}
-    solow_result = solow_solver.solve(initial_solow_coefs)
+
+    solow_result = solow_solver.solve(kind="Chebyshev",
+                                      coefs_dict=initial_solow_coefs,
+                                      domain=[0, 100])
 
     # define the Ramsey-Cass-Coopmans model
     mpk = sym.diff(y, k, 1)
@@ -326,6 +189,3 @@ if __name__ == '__main__':
 
     ramsey_solver = OrthogonalCollocationSolver(ramsey, ramsey_params)
 
-    # specify kind of polynomials to use and the spproximation domain
-    ramsey_solver.kind = "Chebyshev"
-    ramsey_solver.domain = [0, 100]
