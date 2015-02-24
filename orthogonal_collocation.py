@@ -123,33 +123,93 @@ class OrthogonalCollocationSolution(OrthogonalCollocation):
         return np.linspace(self.domain[0], self.domain[1], self.number_knots)
 
     @property
+    def _residuals(self):
+        """Return the residuals stored as a dict of NumPy arrays."""
+        tmp = {}
+        for var, function in self.residual_functions.iteritems():
+            tmp[var] = pd.Series(function(self._interpolation_knots),
+                                 index=self._interpolation_knots)
+        return tmp
+
+    @property
+    def _solution(self):
+        """Return the solution stored as a dict of NumPy arrays."""
+        tmp = {}
+        for var, function in self.functions.iteritems():
+            tmp[var] = pd.Series(function(self._interpolation_knots),
+                                 index=self._interpolation_knots)
+        return tmp
+
+    @property
     def coefficients(self):
+        """
+        Coefficients to use when constructing the approximating polynomials.
+
+        :getter: Return the `coefficients` attribute.
+        :type: dict
+
+        """
         return self._coefs_array_to_dict(self.result.x, self.degrees)
 
     @property
     def degrees(self):
+        """
+        Degrees to use when constructing the approximating polynomials.
+
+        :getter: Return the `degrees` attribute.
+        :type: dict
+
+        """
         return self._degrees
 
     @property
     def domain(self):
+        """
+        Domain to use when constructing the approximating polynomials.
+
+        :getter: Return the `domain` attribute.
+        :type: list
+
+        """
         return self._domain
 
     @property
     def derivatives(self):
+        """
+        Derivatives of the approximating polynomials.
+
+        :getter: Return the `derivatives` attribute.
+        :type: dict
+
+        """
         return self._construct_basis_derivs(self.coefficients, self.kind, self.domain)
 
     @property
     def functions(self):
+        """
+        The polynomial functions used to approximate the solution to the model.
+
+        :getter: Return the `functions` attribute.
+        :type: dict
+
+        """
         return self._construct_basis_funcs(self.coefficients, self.kind, self.domain)
 
     @property
     def kind(self):
+        """
+        Kind of polynomials to use when constructing the approximation.
+
+        :getter: Return the `kind` of orthogonal polynomials.
+        :type: string
+
+        """
         return self._kind
 
     @property
     def number_knots(self):
         """
-        Number of interpolation knots to use when computing the final solution.
+        Number of interpolation knots to use when computing the solution.
 
         :getter: Return the number of interpolation knots.
         :setter: Set a new number of interpolation knots.
@@ -180,34 +240,35 @@ class OrthogonalCollocationSolution(OrthogonalCollocation):
         return self._construct_residual_funcs(self.derivatives, self.functions)
 
     @property
-    def _solution(self):
-        """Return the solution stored as a NumPy array."""
-        tmp = []#[self._interpolation_knots]
-        for var in self.polynomials.iteritems():
-            tmp.append(poly(self._interpolation_knots)[:, np.newaxis])
-        return np.hstack(tmp)
+    def residuals(self):
+        """
+        Solution residuals represented as a Pandas `DataFrame`.
+
+        :getter: Return the `DataFrame` representing the solution residuals.
+        :type: `pandas.DataFrame`
+
+        """
+        return pd.DataFrame.from_dict(self._residuals)
 
     @property
     def solution(self):
         """
-        Solution to the model represented as a Pandas DataFrame.
+        Solution to the model represented as a Pandas `DataFrame`.
 
-        :getter: Return the DataFrame representing the current solution.
-        :type: pandas.DataFrame
+        :getter: Return the `DataFrame` representing the current solution.
+        :type: `pandas.DataFrame`
 
         """
-        # col_names = ['x', r'$\mu(x)$', r'$\theta(x)$', '$w(x)$', r'$\pi(x)$']
-        df = pd.DataFrame(self._solution, index=self._interpolation_knots)
-        return df.set_index('x')
+        return pd.DataFrame.from_dict(self._solution)
 
     @property
     def success(self):
         """
-        True if a solution was found by the `OrthogonalCollocationSolver`;
-        False otherwise.
+        True, if a solution was found by the `OrthogonalCollocationSolver`;
+        otherwise, False.
 
         :getter: Return the `success` attribute.
-        :type: boolean
+        :type: `boolean`
 
         """
         return self.result.success
@@ -273,9 +334,9 @@ if __name__ == '__main__':
     initial_poly = np.polynomial.Chebyshev.fit(xs, ys, 15, [0, 100])
     initial_solow_coefs = {k: initial_poly.coef}
 
-    solow_result = solow_solver.solve(kind="Chebyshev",
-                                      coefs_dict=initial_solow_coefs,
-                                      domain=[0, 100])
+    solow_solution = solow_solver.solve(kind="Chebyshev",
+                                        coefs_dict=initial_solow_coefs,
+                                        domain=[0, 100])
 
     # define the Ramsey-Cass-Coopmans model
     mpk = sym.diff(y, k, 1)
@@ -298,3 +359,6 @@ if __name__ == '__main__':
 
     ramsey_solver = OrthogonalCollocationSolver(ramsey, ramsey_params)
 
+    ramsey_solution = ramsey_solver.solve(kind="Chebyshev",
+                                          coefs_dict=initial_solow_coefs,
+                                          domain=[0, 100])
