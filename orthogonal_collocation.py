@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy import optimize
 
 import solvers
@@ -8,29 +9,6 @@ class OrthogonalCollocation(solvers.Solver):
     """Base class for OrthogonalCollocation classes."""
 
     _valid_kinds = ["Chebyshev", "Hermite", "Laguerre", "Legendre"]
-
-    def _coefs_array_to_dict(self, coefs_array, degrees):
-        """Split array of coefs into dict mapping symbols to coef arrays."""
-        precondition = coefs_array.size == sum(degrees.values()) + len(degrees)
-        assert precondition, "The coefs array must conform with degree list!"
-
-        coefs_dict = {}
-        for var, degree in degrees.iteritems():
-            coefs_dict[var] = coefs_array[:degree+1]
-            coefs_array = coefs_array[degree+1:]
-
-        postcondition = len(coefs_dict) == len(degrees)
-        assert postcondition, "Length of coefs and degree lists must be equal!"
-
-        return coefs_dict
-
-    def _coefs_dict_to_array(self, coefs_dict):
-        """Cast dict mapping symbol to coef arrays into array of coefs."""
-        coefs_list = []
-        for var in self.model.dependent_vars:
-            coef_array = coefs_dict[var]
-            coefs_list.append(coef_array)
-        return np.hstack(coefs_list)
 
     @classmethod
     def _basis_derivative_factory(cls, coef, kind, domain):
@@ -120,8 +98,139 @@ class OrthogonalCollocationSolver(OrthogonalCollocation):
                                args=(kind, domain, degrees),
                                method=method,
                                **kwargs)
-        return result
+        solution = OrthogonalCollocationSolution(degrees, domain, kind,
+                                                 self.model, self.params,
+                                                 result)
+        return solution
 
+
+class OrthogonalCollocationSolution(OrthogonalCollocation):
+    """Represents solution obtained using an OrthogonalCollocation solver."""
+
+    def __init__(self, degrees, domain, kind, model, params, result):
+        """Create an instance of the OrthogonalCollocationSolution class."""
+        super(OrthogonalCollocationSolution, self).__init__(model, params)
+
+        # initialize solution attributes
+        self._degrees = degrees
+        self._domain = domain
+        self._kind = kind
+        self._result = self._validate_result(result)
+
+    @property
+    def _interpolation_knots(self):
+        """Interpolation knots to use when computing the final solution."""
+        return np.linspace(self.domain[0], self.domain[1], self.number_knots)
+
+    @property
+    def coefficients(self):
+        return self._coefs_array_to_dict(self.result.x, self.degrees)
+
+    @property
+    def degrees(self):
+        return self._degrees
+
+    @property
+    def domain(self):
+        return self._domain
+
+    @property
+    def derivatives(self):
+        return self._construct_basis_derivs(self.coefficients, self.kind, self.domain)
+
+    @property
+    def functions(self):
+        return self._construct_basis_funcs(self.coefficients, self.kind, self.domain)
+
+    @property
+    def kind(self):
+        return self._kind
+
+    @property
+    def number_knots(self):
+        """
+        Number of interpolation knots to use when computing the final solution.
+
+        :getter: Return the number of interpolation knots.
+        :setter: Set a new number of interpolation knots.
+        :type: int
+
+        """
+        return self._number_knots
+
+    @number_knots.setter
+    def number_knots(self, value):
+        """Set a new number of interpolation knots."""
+        self._number_knots = self._validate_number_knots(value)
+
+    @property
+    def result(self):
+        """
+        An instance of the `optimize.optimize.OptimizeResult` class that stores
+        the raw output of the `OrthogonalCollocationSolver`.
+
+        :getter: Return the `result` attribute.
+        :type: `optimize.optimize.OptimizeResult`
+
+        """
+        return self._result
+
+    @property
+    def residual_functions(self):
+        return self._construct_residual_funcs(self.derivatives, self.functions)
+
+    @property
+    def _solution(self):
+        """Return the solution stored as a NumPy array."""
+        tmp = []#[self._interpolation_knots]
+        for var in self.polynomials.iteritems():
+            tmp.append(poly(self._interpolation_knots)[:, np.newaxis])
+        return np.hstack(tmp)
+
+    @property
+    def solution(self):
+        """
+        Solution to the model represented as a Pandas DataFrame.
+
+        :getter: Return the DataFrame representing the current solution.
+        :type: pandas.DataFrame
+
+        """
+        # col_names = ['x', r'$\mu(x)$', r'$\theta(x)$', '$w(x)$', r'$\pi(x)$']
+        df = pd.DataFrame(self._solution, index=self._interpolation_knots)
+        return df.set_index('x')
+
+    @property
+    def success(self):
+        """
+        True if a solution was found by the `OrthogonalCollocationSolver`;
+        False otherwise.
+
+        :getter: Return the `success` attribute.
+        :type: boolean
+
+        """
+        return self.result.success
+
+    @staticmethod
+    def _validate_number_knots(number):
+        """Validates the `number_knots` attribute."""
+        if not isinstance(number, int):
+            mesg = ("The 'number_knots' attribute must have type " +
+                    "'int', not {}.")
+            raise AttributeError(mesg.format(number.__class__))
+        else:
+            return number
+
+    @staticmethod
+    def _validate_result(result):
+        """Validates the `result` attribute."""
+        if not isinstance(result, optimize.optimize.OptimizeResult):
+            mesg = ("The 'result' attribute must have type " +
+                    "'optimize.optimize.OptimizeResult', not {}.")
+            raise AttributeError(mesg.format(result.__class__))
+        else:
+            return result
 
 if __name__ == '__main__':
     import sympy as sym
@@ -161,7 +270,7 @@ if __name__ == '__main__':
         return ((1 - alpha) / (((g + n + delta) / s)**rho - alpha))**(1 / rho)
     xs = np.linspace(0, 100, 1000)
     ys = kstar(**solow_params) - (kstar(**solow_params) - k0) * np.exp(-xs)
-    initial_poly = np.polynomial.Chebyshev.fit(xs, ys, 5, [0, 100])
+    initial_poly = np.polynomial.Chebyshev.fit(xs, ys, 15, [0, 100])
     initial_solow_coefs = {k: initial_poly.coef}
 
     solow_result = solow_solver.solve(kind="Chebyshev",

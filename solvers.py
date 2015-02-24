@@ -104,13 +104,39 @@ class Solver(object):
         valid_params = self._validate_params(value)
         self._params = self._order_params(valid_params)
 
-    def _basis_derivative_factory(self, *args, **kwargs):
+    @classmethod
+    def _basis_derivative_factory(cls, *args, **kwargs):
         """Factory method for constructing derivatives of basis functions."""
         raise NotImplementedError
 
-    def _basis_function_factory(self, *args, **kwargs):
+    @classmethod
+    def _basis_function_factory(cls, *args, **kwargs):
         """Factory method for constructing basis functions."""
         raise NotImplementedError
+
+    @staticmethod
+    def _coefs_array_to_dict(coefs_array, degrees):
+        """Split array of coefs into dict mapping symbols to coef arrays."""
+        precondition = coefs_array.size == sum(degrees.values()) + len(degrees)
+        assert precondition, "The coefs array must conform with degree list!"
+
+        coefs_dict = {}
+        for var, degree in degrees.iteritems():
+            coefs_dict[var] = coefs_array[:degree+1]
+            coefs_array = coefs_array[degree+1:]
+
+        postcondition = len(coefs_dict) == len(degrees)
+        assert postcondition, "Length of coefs and degree lists must be equal!"
+
+        return coefs_dict
+
+    def _coefs_dict_to_array(self, coefs_dict):
+        """Cast dict mapping symbol to coef arrays into array of coefs."""
+        coefs_list = []
+        for var in self.model.dependent_vars:
+            coef_array = coefs_dict[var]
+            coefs_list.append(coef_array)
+        return np.hstack(coefs_list)
 
     def _construct_basis_funcs(self, coefs, *args, **kwargs):
         """Return dict of basis functions given coefficients."""
