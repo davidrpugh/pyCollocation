@@ -13,6 +13,11 @@ setup(
                       "pandas",
                       ],
     author_email="david.pugh@maths.ox.ac.uk",
-    classifiers=["Programming Language :: Python",
+    classifiers=['Development Status :: 1 - Planning',
+                 'Intended Audience :: Education',
+                 'Intended Audience :: Science/Research',
+                 'License :: OSI Approved :: MIT License',
+                 'Operating System :: OS Independent',
+                 'Programming Language :: Python',
                  ]
     )
