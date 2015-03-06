@@ -11,10 +11,12 @@ class SolowModel(unittest.TestCase):
 
     @staticmethod
     def steady_state(g, n, s, alpha, delta, sigma):
+        """Steady state value for capital (per unit effective labor)."""
         rho = (sigma - 1) / sigma
         return ((1 - alpha) / (((g + n + delta) / s)**rho - alpha))**(1 / rho)
 
     def setUp(self):
+        """Set up a Solow model to solve."""
         # define some variables
         t, k, c = sym.symbols('t, k, c')
 
@@ -27,7 +29,7 @@ class SolowModel(unittest.TestCase):
         rho = (sigma - 1) / sigma
         y = (alpha * k**rho + (1 - alpha))**(1 / rho)
 
-        # define the Solow model
+        # define the equation of motion for capital
         k_dot = s * y - (g + n + delta) * k
         rhs = {k: k_dot}
 
@@ -57,19 +59,28 @@ class SolowModel(unittest.TestCase):
         self.solver = orthogonal_collocation.OrthogonalCollocationSolver(self.model,
                                                                          self.params)
 
+        # set the domain
+        self.domain = [0, 100]
+
         # set an initial guess
-        ts = np.linspace(0, 100, 1000)
+        ts = np.linspace(self.domain[0], self.domain[1], 1000)
         ks = kstar - (kstar - k0) * np.exp(-ts)
-        initial_guess = np.polynomial.Chebyshev.fit(ts, ks, 50, [0, 100])
+        initial_guess = np.polynomial.Chebyshev.fit(ts, ks, 50, self.domain)
         self.initial_coefs = {k: initial_guess.coef}
 
-    def test_orthogonal_polynomial_solver(self):
-
+    def test_chebyshev_collocation(self):
+        """Test collocation solver using Chebyshev polynomials for basis."""
         solution = self.solver.solve(kind="Chebyshev",
                                      coefs_dict=self.initial_coefs,
-                                     domain=[0, 100])
+                                     domain=self.domain)
 
-        solution.interpolation_knots = np.linspace(0, 100, 1000)
+        # compute the residuals
+        solution.interpolation_knots = np.linspace(self.domain[0],
+                                                   self.domain[1],
+                                                   1000)
+        residuals = solution.residuals.values
+
+        # check that residuals are all close to zero
         mesg = "Residuals:\n{}\n\nDictionary of model params: {}"
-        self.assertTrue(np.allclose(solution.residuals.values, 0, atol=1e-6),
-                        msg=mesg.format(solution.residuals.values, self.params))
+        self.assertTrue(np.allclose(residuals, 0, atol=1e-6),
+                        msg=mesg.format(residuals, self.params))
