@@ -257,7 +257,7 @@ class Solver(object):
 
         def residual_function(t):
             """Residual function evaluated at array of points t."""
-            args = self._evaluate_basis_funcs(basis_funcs, t) + self.params.values()
+            args = self._evaluate_basis_funcs(basis_funcs, t) + list(self.params.values())
             return basis_derivs[var](t) - self._rhs_functions(var)(t, *args)
 
         return residual_function
