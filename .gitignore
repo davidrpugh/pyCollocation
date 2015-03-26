@@ -9,3 +9,6 @@
 
 # ignore egg info
 pyCollocation.egg-info/
+
+# ignore build info
+dist/

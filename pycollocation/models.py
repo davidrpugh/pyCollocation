@@ -76,7 +76,7 @@ class SymbolicModel(object):
             raise ValueError(mesg)
         else:
             exprs = {}
-            for var, expr in rhs.iteritems():
+            for var, expr in rhs.items():
                 exprs[var] = self._validate_expression(expr)
             return exprs
 
