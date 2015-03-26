@@ -3,3 +3,9 @@
 
 # ignore ipython checkpoints
 .ipynb_checkpoints/
+
+# ignore coverage statistics
+.coverage
+
+# ignore egg info
+pyCollocation.egg-info/
