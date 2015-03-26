@@ -234,7 +234,7 @@ class Solver(object):
         """Return the lower boundary condition evaluated on the domain."""
         if self._lower_boundary_condition is not None:
             args = (self._evaluate_basis_funcs(basis_funcs, lower_bound) +
-                    self.params.values())
+                    list(self.params.values()))
             return self._lower_boundary_condition(lower_bound, *args)
 
     def _evaluate_residual_funcs(self, residual_funcs, nodes):
@@ -245,7 +245,7 @@ class Solver(object):
         """Return the upper boundary condition evaluated on the domain."""
         if self._upper_boundary_condition is not None:
             args = (self._evaluate_basis_funcs(basis_funcs, upper_bound) +
-                    self.params.values())
+                    list(self.params.values()))
             return self._upper_boundary_condition(upper_bound, *args)
 
     def _lambdify_factory(self, expr):
