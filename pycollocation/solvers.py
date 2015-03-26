@@ -175,7 +175,7 @@ class Solver(object):
         assert precondition, "The coefs array must conform with degree list!"
 
         coefs_dict = {}
-        for var, degree in degrees.iteritems():
+        for var, degree in degrees.items():
             coefs_dict[var] = coefs_array[:degree+1]
             coefs_array = coefs_array[degree+1:]
 
@@ -195,21 +195,21 @@ class Solver(object):
     def _construct_basis_funcs(self, coefs, *args, **kwargs):
         """Return dict of basis functions given coefficients."""
         basis_funcs = {}
-        for var, coef in coefs.iteritems():
+        for var, coef in coefs.items():
             basis_funcs[var] = self._basis_function_factory(coef, *args, **kwargs)
         return basis_funcs
 
     def _construct_basis_derivs(self, coefs, *args, **kwargs):
         """Return dict of basis function derivatives given coefficients."""
         basis_derivs = {}
-        for var, coef in coefs.iteritems():
+        for var, coef in coefs.items():
             basis_derivs[var] = self._basis_derivative_factory(coef, *args, **kwargs)
         return basis_derivs
 
     def _construct_residual_funcs(self, basis_derivs, basis_funcs):
         """Return dict of residual functions for given basis funcs and derivs."""
         residual_funcs = {}
-        for var, basis_deriv in basis_derivs.iteritems():
+        for var, basis_deriv in basis_derivs.items():
             residual_funcs[var] = self._residual_function_factory(var, basis_derivs, basis_funcs)
         return residual_funcs
 
