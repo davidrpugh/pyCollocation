@@ -88,7 +88,7 @@ class OrthogonalPolynomialSolver(OrthogonalPolynomialBasis, solvers.Solver):
     def _basis_polynomial_coefs(degrees):
         """Return coefficients for the basis polynomial of a given degree."""
         basis_coefs = {}
-        for var, degree in degrees.iteritems():
+        for var, degree in degrees.items():
             tmp_coef = np.zeros(degree + 1)
             tmp_coef[-1] = 1
             basis_coefs[var] = tmp_coef
@@ -97,7 +97,7 @@ class OrthogonalPolynomialSolver(OrthogonalPolynomialBasis, solvers.Solver):
     @staticmethod
     def _collocation_nodes(polynomials):
         """Return roots of suitable basis polynomial as collocation nodes."""
-        return {var: poly.roots() for var, poly in polynomials.iteritems()}
+        return {var: poly.roots() for var, poly in polynomials.items()}
 
     def _evaluate_collocation_residuals(self, coefs_array, kind, domain, degrees):
         """Return residuals given coefs and degrees for approximating polys."""
