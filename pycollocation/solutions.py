@@ -17,7 +17,7 @@ class Solution(object):
     def _residuals(self):
         """Return the residuals stored as a dict of NumPy arrays."""
         tmp = {}
-        for var, function in self.solver.residual_functions.iteritems():
+        for var, function in self.solver.residual_functions.items():
             tmp[var] = pd.Series(function(self.interpolation_knots),
                                  index=self.interpolation_knots)
         return tmp
@@ -26,7 +26,7 @@ class Solution(object):
     def _solution(self):
         """Return the solution stored as a dict of NumPy arrays."""
         tmp = {}
-        for var, function in self.solver.functions.iteritems():
+        for var, function in self.solver.functions.items():
             tmp[var] = pd.Series(function(self.interpolation_knots),
                                  index=self.interpolation_knots)
         return tmp
