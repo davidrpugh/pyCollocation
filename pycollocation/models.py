@@ -1,30 +1,11 @@
 import collections
 
-import numpy as np
 import sympy as sym
 
+import symbolics
 
-class SymbolicModel(object):
-    """Base class for all symbolic models."""
 
-    _cached_rhs_functions = {}  # not sure if this is good practice!
-
-    _modules = [{'ImmutableMatrix': np.array}, 'numpy']
-
-    @property
-    def _symbolic_args(self):
-        """List of symbolic arguments used to lambdify expressions."""
-        return self._symbolic_vars + self._symbolic_params
-
-    @property
-    def _symbolic_params(self):
-        """List of symbolic model parameters."""
-        return sym.var(list(self.params.keys()))
-
-    @property
-    def _symbolic_vars(self):
-        """List of symbolic model variables."""
-        return [self.independent_var] + self.dependent_vars
+class Model(object):
 
     @property
     def dependent_vars(self):
@@ -77,18 +58,7 @@ class SymbolicModel(object):
     def rhs(self, equations):
         """Set a new right-hand side of the system of equations."""
         self._rhs = self._validate_rhs(equations)
-        self._clear_cache
-
-    def _lambdify_factory(self, expr):
-        """Lambdify a symbolic expression."""
-        return sym.lambdify(self._symbolic_args, expr, self._modules)
-
-    def _rhs_functions(self, var):
-        """Cache lamdified rhs functions for numerical evaluation."""
-        if self._cached_rhs_functions.get(var) is None:
-            eqn = self.rhs[var]
-            self._cached_rhs_functions[var] = self._lambdify_factory(eqn)
-        return self._cached_rhs_functions[var]
+        self._clear_cache()
 
     @staticmethod
     def _validate_expression(expression):
@@ -126,6 +96,19 @@ class SymbolicModel(object):
     def _validate_symbols(cls, symbols):
         """Validate the dependent_vars attribute."""
         return [cls._validate_symbol(symbol) for symbol in symbols]
+
+
+class SymbolicModel(symbolics.Symbolics, Model):
+    """Base class for all symbolic models."""
+
+    _cached_rhs_functions = {}  # not sure if this is good practice!
+
+    def _rhs_functions(self, var):
+        """Cache lamdified rhs functions for numerical evaluation."""
+        if self._cached_rhs_functions.get(var) is None:
+            eqn = self.rhs[var]
+            self._cached_rhs_functions[var] = self._lambdify_factory(eqn)
+        return self._cached_rhs_functions[var]
 
 
 class DifferentialEquation(SymbolicModel):
