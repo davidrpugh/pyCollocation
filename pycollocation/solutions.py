@@ -82,18 +82,6 @@ class Solution(object):
         """
         return pd.DataFrame.from_dict(self._solution)
 
-    @property
-    def success(self):
-        """
-        True, if a solution was found by the `solvers.Solver` object;
-        otherwise, False.
-
-        :getter: Return the `success` attribute.
-        :type: `boolean`
-
-        """
-        return self.result.success
-
     @staticmethod
     def _validate_interpolation_knots(number):
         """Validates the `interpolation_knots` attribute."""
