@@ -1,9 +1,5 @@
 import collections
 
-import sympy as sym
-
-from . import symbolics
-
 
 class ModelLike(object):
 
@@ -72,14 +68,3 @@ class ModelLike(object):
             raise AttributeError(mesg.format(value.__class__))
         else:
             return value
-
-    def _validate_rhs(self, rhs):
-        """Validate the rhs attribute."""
-        if not isinstance(rhs, dict):
-            mesg = "Attribute `rhs` must be of type `dict` not {}"
-            raise AttributeError(mesg.format(rhs.__class__))
-        elif not (len(rhs) == len(self.dependent_vars)):
-            mesg = "Number of equations must equal number of dependent vars."
-            raise ValueError(mesg)
-        else:
-            return rhs

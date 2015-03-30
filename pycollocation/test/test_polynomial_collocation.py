@@ -41,7 +41,7 @@ class SolowModel(unittest.TestCase):
 
         # define the equation of motion for capital
         k_dot = s * y - (g + n + delta) * k
-        rhs = {k: k_dot}
+        rhs = {'k': k_dot}
 
         # set some randomly generated parameters
         self.params = {'g': np.random.uniform(),
@@ -60,8 +60,8 @@ class SolowModel(unittest.TestCase):
         bcs = {'lower': [k - self.k0], 'upper': None}
 
         # set the model instance
-        self.model = SymbolicBoundaryValueProblem(dependent_vars=[k],
-                                                  independent_var=t,
+        self.model = SymbolicBoundaryValueProblem(dependent_vars=['k'],
+                                                  independent_var='t',
                                                   rhs=rhs,
                                                   boundary_conditions=bcs,
                                                   params=self.params)
@@ -76,7 +76,7 @@ class SolowModel(unittest.TestCase):
         ts = np.linspace(self.domain[0], self.domain[1], 1000)
         ks = kstar - (kstar - self.k0) * np.exp(-ts)
         initial_guess = np.polynomial.Chebyshev.fit(ts, ks, 50, self.domain)
-        self.initial_coefs = {k: initial_guess.coef}
+        self.initial_coefs = {'k': initial_guess.coef}
 
     def test_chebyshev_collocation(self):
         """Test collocation solver using Chebyshev polynomials for basis."""
