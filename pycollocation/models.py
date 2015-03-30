@@ -1,8 +1,30 @@
+import collections
+
+import numpy as np
 import sympy as sym
 
 
 class SymbolicModel(object):
     """Base class for all symbolic models."""
+
+    _cached_rhs_functions = {}  # not sure if this is good practice!
+
+    _modules = [{'ImmutableMatrix': np.array}, 'numpy']
+
+    @property
+    def _symbolic_args(self):
+        """List of symbolic arguments used to lambdify expressions."""
+        return self._symbolic_vars + self._symbolic_params
+
+    @property
+    def _symbolic_params(self):
+        """List of symbolic model parameters."""
+        return sym.var(list(self.params.keys()))
+
+    @property
+    def _symbolic_vars(self):
+        """List of symbolic model variables."""
+        return [self.independent_var] + self.dependent_vars
 
     @property
     def dependent_vars(self):
@@ -57,6 +79,17 @@ class SymbolicModel(object):
         self._rhs = self._validate_rhs(equations)
         self._clear_cache
 
+    def _lambdify_factory(self, expr):
+        """Lambdify a symbolic expression."""
+        return sym.lambdify(self._symbolic_args, expr, self._modules)
+
+    def _rhs_functions(self, var):
+        """Cache lamdified rhs functions for numerical evaluation."""
+        if self._cached_rhs_functions.get(var) is None:
+            eqn = self.rhs[var]
+            self._cached_rhs_functions[var] = self._lambdify_factory(eqn)
+        return self._cached_rhs_functions[var]
+
     @staticmethod
     def _validate_expression(expression):
         """Validates a symbolic expression."""
@@ -99,12 +132,6 @@ class DifferentialEquation(SymbolicModel):
 
     __symbolic_jacobian = None
 
-    def __init__(self, dependent_vars, independent_var, rhs):
-        """Create an instance of the DifferentialEquation class."""
-        self.dependent_vars = dependent_vars
-        self.independent_var = independent_var
-        self.rhs = rhs
-
     @property
     def _symbolic_system(self):
         """Represents rhs as a symbolic matrix."""
@@ -132,15 +159,43 @@ class DifferentialEquation(SymbolicModel):
 class BoundaryValueProblem(DifferentialEquation):
     """Class for representing two-point boundary value problems."""
 
-    def __init__(self, boundary_conditions, dependent_vars, independent_var, rhs):
+    __lower_boundary_condition = None
+
+    __upper_boundary_condition = None
+
+    def __init__(self, boundary_conditions, dependent_vars, independent_var,
+                 rhs, params):
         """
         Create an instance of a two-point boundary value problem (BVP).
 
         """
-        super(BoundaryValueProblem, self).__init__(dependent_vars,
-                                                   independent_var,
-                                                   rhs)
+        self.dependent_vars = dependent_vars
+        self.independent_var = independent_var
+        self.rhs = rhs
         self.boundary_conditions = boundary_conditions
+        self.params = params
+
+    @property
+    def _lower_boundary_condition(self):
+        """Cache lambdified lower boundary condition for numerical evaluation."""
+        condition = self.boundary_conditions['lower']
+        if condition is not None:
+            if self.__lower_boundary_condition is None:
+                self.__lower_boundary_condition = self._lambdify_factory(condition)
+            return self.__lower_boundary_condition
+        else:
+            return None
+
+    @property
+    def _upper_boundary_condition(self):
+        """Cache lambdified upper boundary condition for numerical evaluation."""
+        condition = self.boundary_conditions['upper']
+        if condition is not None:
+            if self.__upper_boundary_condition is None:
+                self.__upper_boundary_condition = self._lambdify_factory(condition)
+            return self.__upper_boundary_condition
+        else:
+            return None
 
     @property
     def boundary_conditions(self):
@@ -158,6 +213,29 @@ class BoundaryValueProblem(DifferentialEquation):
     def boundary_conditions(self, conditions):
         """Set new boundary conditions for the model."""
         self._boundary_conditions = self._validate_boundary(conditions)
+
+    @property
+    def params(self):
+        """
+        Dictionary of model parameters.
+
+        :getter: Return the current parameter dictionary.
+        :setter: Set a new parameter dictionary.
+        :type: dict
+
+        """
+        return self._params
+
+    @params.setter
+    def params(self, value):
+        """Set a new parameter dictionary."""
+        valid_params = self._validate_params(value)
+        self._params = self._order_params(valid_params)
+
+    @staticmethod
+    def _order_params(params):
+        """Cast a dictionary to an order dictionary."""
+        return collections.OrderedDict(sorted(params.items()))
 
     def _sufficient_boundary(self, conditions):
         """Check that there are sufficient boundary conditions."""
@@ -190,3 +268,12 @@ class BoundaryValueProblem(DifferentialEquation):
             return None
         else:
             return [self._validate_expression(expr) for expr in expressions]
+
+    @staticmethod
+    def _validate_params(value):
+        """Validate the dictionary of parameters."""
+        if not isinstance(value, dict):
+            mesg = "Attribute 'params' must have type dict, not {}"
+            raise AttributeError(mesg.format(value.__class__))
+        else:
+            return value

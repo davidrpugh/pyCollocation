@@ -13,8 +13,7 @@ class SolowModel(unittest.TestCase):
     @staticmethod
     def steady_state(g, n, s, alpha, delta, sigma):
         """Steady state value for capital (per unit effective labor)."""
-        rho = (sigma - 1) / sigma
-        return ((1 - alpha) / (((g + n + delta) / s)**rho - alpha))**(1 / rho)
+        return (s / (g + n + delta))**(1 / (1 - alpha))
 
     def setUp(self):
         """Set up a Solow model to solve."""
@@ -26,9 +25,8 @@ class SolowModel(unittest.TestCase):
         rho, theta = sym.symbols('rho, theta')
         g, n, s, delta = sym.symbols('g, n, s, delta')
 
-        # intensive output has the CES form
-        rho = (sigma - 1) / sigma
-        y = (alpha * k**rho + (1 - alpha))**(1 / rho)
+        # intensive output has the Cobb-Douglas form
+        y = k**alpha
 
         # define the equation of motion for capital
         k_dot = s * y - (g + n + delta) * k
@@ -39,7 +37,7 @@ class SolowModel(unittest.TestCase):
                        's': np.random.uniform(),
                        'n': np.random.uniform(),
                        'alpha': np.random.uniform(),
-                       'sigma': np.random.uniform(0.0, 10.0),
+                       'sigma': 1.0,
                        'delta': np.random.uniform()}
 
         # specify some boundary conditions
@@ -54,11 +52,11 @@ class SolowModel(unittest.TestCase):
         self.model = models.BoundaryValueProblem(dependent_vars=[k],
                                                  independent_var=t,
                                                  rhs=rhs,
-                                                 boundary_conditions=bcs)
+                                                 boundary_conditions=bcs,
+                                                 params=self.params)
 
         # set the solver instance
-        self.solver = orthogonal_polynomials.OrthogonalPolynomialSolver(self.model,
-                                                                        self.params)
+        self.solver = orthogonal_polynomials.OrthogonalPolynomialSolver(self.model)
 
         # set the domain
         self.domain = [0, 100]
@@ -77,13 +75,16 @@ class SolowModel(unittest.TestCase):
                           domain=self.domain)
         solution = solutions.Solution(self.solver)
 
+        # check that solver terminated successfully
+        self.assertTrue(solution.solver.result.success, msg="Solver failed!")
+
         # compute the residuals
         solution.interpolation_knots = np.linspace(self.domain[0],
                                                    self.domain[1],
                                                    1000)
         residuals = solution.residuals.values
 
-        # check that residuals are all close to zero
+        # check that residuals are close to zero on average
         mesg = "Chebyshev residuals:\n{}\n\nDictionary of model params: {}"
         self.assertTrue(np.mean(residuals) < 1e-6,
                         msg=mesg.format(residuals, self.params))
@@ -94,6 +95,9 @@ class SolowModel(unittest.TestCase):
                           coefs_dict=self.initial_coefs,
                           domain=self.domain)
         solution = solutions.Solution(self.solver)
+
+        # check that solver terminated successfully
+        self.assertTrue(solution.solver.result.success, msg="Solver failed!")
 
         # compute the residuals
         solution.interpolation_knots = np.linspace(self.domain[0],
