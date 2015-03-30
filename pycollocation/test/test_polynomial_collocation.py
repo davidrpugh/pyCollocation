@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 import sympy as sym
 
-from .. import models
-from .. import orthogonal_polynomials
+from .. boundary_value_problems import SymbolicBoundaryValueProblem
+from .. orthogonal_polynomials import OrthogonalPolynomialSolver
 from .. import solutions
 
 
@@ -49,14 +49,14 @@ class SolowModel(unittest.TestCase):
         bcs = {'lower': [k - k0], 'upper': None}
 
         # set the model instance
-        self.model = models.BoundaryValueProblem(dependent_vars=[k],
-                                                 independent_var=t,
-                                                 rhs=rhs,
-                                                 boundary_conditions=bcs,
-                                                 params=self.params)
+        self.model = SymbolicBoundaryValueProblem(dependent_vars=[k],
+                                                  independent_var=t,
+                                                  rhs=rhs,
+                                                  boundary_conditions=bcs,
+                                                  params=self.params)
 
         # set the solver instance
-        self.solver = orthogonal_polynomials.OrthogonalPolynomialSolver(self.model)
+        self.solver = OrthogonalPolynomialSolver(self.model)
 
         # set the domain
         self.domain = [0, 100]
