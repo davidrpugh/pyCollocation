@@ -2,7 +2,7 @@ import collections
 
 import sympy as sym
 
-import symbolics
+from . import symbolics
 
 
 class Model(object):
