@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import models
+from . import boundary_value_problems
 
 
 class Solver(object):
@@ -193,8 +193,8 @@ class Solver(object):
     @staticmethod
     def _validate_model(model):
         """Validate the dictionary of parameters."""
-        if not isinstance(model, models.BoundaryValueProblem):
-            mesg = "Attribute 'model' must have type models.BoundaryValueProblem, not {}"
+        if not isinstance(model, boundary_value_problems.BoundaryValueProblem):
+            mesg = "Attribute 'model' must have type BoundaryValueProblem, not {}"
             raise AttributeError(mesg.format(model.__class__))
         else:
             return model
