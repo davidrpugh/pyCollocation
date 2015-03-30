@@ -54,11 +54,11 @@ class SolowModel(unittest.TestCase):
         self.model = models.BoundaryValueProblem(dependent_vars=[k],
                                                  independent_var=t,
                                                  rhs=rhs,
-                                                 boundary_conditions=bcs)
+                                                 boundary_conditions=bcs,
+                                                 params=self.params)
 
         # set the solver instance
-        self.solver = orthogonal_polynomials.OrthogonalPolynomialSolver(self.model,
-                                                                        self.params)
+        self.solver = orthogonal_polynomials.OrthogonalPolynomialSolver(self.model)
 
         # set the domain
         self.domain = [0, 100]
