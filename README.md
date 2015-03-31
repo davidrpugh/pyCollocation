@@ -15,5 +15,6 @@ There are a number of example notebooks that demonstrate how to use the library 
 * [Solow model of economic growth](http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb)
 * [Ramsey-Cass-Koopmans model of optimal savings](http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/ramsey-model.ipynb)
 * [Spence model of costly signaling](http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/spence-model.ipynb)
+* [Credit cycles](http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/credit-cycles.ipynb)
 
 More notebooks will be added in the near future (hopefully!)
