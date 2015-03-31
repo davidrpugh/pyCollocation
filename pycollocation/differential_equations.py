@@ -10,17 +10,45 @@ from . import models
 from . import symbolics
 
 
-class SymbolicDifferentialEquation(models.ModelLike,
-                                   symbolics.SymbolicModelLike):
-
-    _cached_rhs_functions = {}  # not sure if this is good practice!
+class DifferentialEquation(models.ModelLike):
 
     def __init__(self, dependent_vars, independent_var, rhs, params):
         """Create an instance of the DifferentialEquation class."""
-        self._dependent_vars = self._validate_symbols(dependent_vars)
-        self._independent_var = self._validate_symbol(independent_var)
+        self._dependent_vars = self._validate_variables(dependent_vars)
+        self._independent_var = self._validate_variable(independent_var)
         self._rhs = self._validate_rhs(rhs)
-        self.params = self._validate_params(params)
+        self.params = params
+
+    def _validate_rhs(self, rhs):
+        """Validate the rhs attribute."""
+        if not isinstance(rhs, dict):
+            mesg = "Attribute `rhs` must be of type `dict` not {}"
+            raise AttributeError(mesg.format(rhs.__class__))
+        elif not (len(rhs) == len(self.dependent_vars)):
+            mesg = "Number of equations must equal number of dependent vars."
+            raise ValueError(mesg)
+        else:
+            return rhs
+
+    @staticmethod
+    def _validate_variable(symbol):
+        """Validate the independent_var attribute."""
+        if not isinstance(symbol, str):
+            mesg = "Attribute must be of type `string` not {}"
+            raise AttributeError(mesg.format(symbol.__class__))
+        else:
+            return symbol
+
+    @classmethod
+    def _validate_variables(cls, symbols):
+        """Validate the dependent_vars attribute."""
+        return [cls._validate_variable(symbol) for symbol in symbols]
+
+
+class SymbolicDifferentialEquation(DifferentialEquation,
+                                   symbolics.SymbolicModelLike):
+
+    _cached_rhs_functions = {}  # not sure if this is good practice!
 
     def _rhs_functions(self, var):
         """Cache lamdified rhs functions for numerical evaluation."""
@@ -46,17 +74,3 @@ class SymbolicDifferentialEquation(models.ModelLike,
             exprs[var] = self._validate_expression(expr)
         else:
             return exprs
-
-    @staticmethod
-    def _validate_symbol(symbol):
-        """Validate the independent_var attribute."""
-        if not isinstance(symbol, sym.Symbol):
-            mesg = "Attribute must be of type `sympy.Symbol` not {}"
-            raise AttributeError(mesg.format(symbol.__class__))
-        else:
-            return symbol
-
-    @classmethod
-    def _validate_symbols(cls, symbols):
-        """Validate the dependent_vars attribute."""
-        return [cls._validate_symbol(symbol) for symbol in symbols]
