@@ -122,7 +122,7 @@ class OrthogonalPolynomialSolver(OrthogonalPolynomialBasis, solvers.Solver):
     def _infer_degrees(self, coefs_dict):
         """Return dict mapping a symbol to degree of its approximating poly."""
         degrees = {}
-        for var in self.model.dependent_vars:
+        for var in coefs_dict.keys():
             coef_array = coefs_dict[var]
             degrees[var] = coef_array.size - 1
         return degrees

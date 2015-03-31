@@ -118,7 +118,7 @@ class Solver(object):
     def _coefs_dict_to_array(self, coefs_dict):
         """Cast dict mapping symbol to coef arrays into array of coefs."""
         coefs_list = []
-        for var in self.model.dependent_vars:
+        for var in coefs_dict.keys():
             coef_array = coefs_dict[var]
             coefs_list.append(coef_array)
         return np.hstack(coefs_list)
