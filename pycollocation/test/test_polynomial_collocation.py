@@ -94,11 +94,14 @@ class SolowModel(unittest.TestCase):
                                                    self.domain[1],
                                                    1000)
         residuals = solution.residuals.values
+        normed_residuals = solution.normalized_residuals.values
 
         # check that residuals are close to zero on average
         mesg = "Chebyshev residuals:\n{}\n\nDictionary of model params: {}"
         self.assertTrue(np.mean(residuals) < 1e-6,
                         msg=mesg.format(residuals, self.params))
+        self.assertTrue(np.mean(normed_residuals) < 1e-6,
+                        msg=mesg.format(normed_residuals, self.params))
 
         # check that the numerical and analytic solutions are close
         numeric_soln = solution.solution.ix[:, 0]
@@ -122,11 +125,14 @@ class SolowModel(unittest.TestCase):
                                                    self.domain[1],
                                                    1000)
         residuals = solution.residuals.values
+        normed_residuals = solution.normalized_residuals.values
 
         # check that residuals are all close to zero
         mesg = "Legendre residuals:\n{}\n\nDictionary of model params: {}"
         self.assertTrue(np.mean(residuals) < 1e-6,
                         msg=mesg.format(residuals, self.params))
+        self.assertTrue(np.mean(normed_residuals) < 1e-6,
+                        msg=mesg.format(normed_residuals, self.params))
 
         # check that the numerical and analytic solutions are close
         numeric_soln = solution.solution.ix[:, 0]
