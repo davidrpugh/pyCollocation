@@ -61,11 +61,23 @@ class Solution(object):
         return self._result
 
     @property
+    def normalized_residuals(self):
+        """
+        Absolute values of the solution residuals normalized by the value of
+        the solution.
+
+        :getter: Return the normalized solution residuals.
+        :type: `pandas.DataFrame`
+
+        """
+        return self.residuals.abs() / self.solution
+
+    @property
     def residuals(self):
         """
-        Solution residuals represented as a Pandas `DataFrame`.
+        Solution residuals.
 
-        :getter: Return the `DataFrame` representing the solution residuals.
+        :getter: Return the solution residuals.
         :type: `pandas.DataFrame`
 
         """
