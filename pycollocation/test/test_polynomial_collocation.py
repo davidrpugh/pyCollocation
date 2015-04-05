@@ -5,7 +5,7 @@ import sympy as sym
 
 from .. boundary_value_problems import SymbolicBoundaryValueProblem
 from .. orthogonal_polynomials import OrthogonalPolynomialSolver
-from .. import solutions
+from .. import visualizers
 
 
 class SolowModel(unittest.TestCase):
@@ -84,17 +84,17 @@ class SolowModel(unittest.TestCase):
         self.solver.solve(kind="Chebyshev",
                           coefs_dict=self.initial_coefs,
                           domain=self.domain)
-        solution = solutions.Solution(self.solver)
+        visualizer = visualizers.Visualizer(self.solver)
 
         # check that solver terminated successfully
-        self.assertTrue(solution.solver.result.success, msg="Solver failed!")
+        self.assertTrue(visualizer.solver.result.success, msg="Solver failed!")
 
         # compute the residuals
-        solution.interpolation_knots = np.linspace(self.domain[0],
-                                                   self.domain[1],
-                                                   1000)
-        residuals = solution.residuals.values
-        normed_residuals = solution.normalized_residuals.values
+        visualizer.interpolation_knots = np.linspace(self.domain[0],
+                                                     self.domain[1],
+                                                     1000)
+        residuals = visualizer.residuals.values
+        normed_residuals = visualizer.normalized_residuals.values
 
         # check that residuals are close to zero on average
         mesg = "Chebyshev residuals:\n{}\n\nDictionary of model params: {}"
@@ -104,9 +104,9 @@ class SolowModel(unittest.TestCase):
                         msg=mesg.format(normed_residuals, self.params))
 
         # check that the numerical and analytic solutions are close
-        numeric_soln = solution.solution.ix[:, 0]
+        numeric_soln = visualizer.solution.ix[:, 0]
         analytic_soln = self.analytic_solution(self.k0,
-                                               solution.interpolation_knots,
+                                               visualizer.interpolation_knots,
                                                **self.params)
         self.assertTrue(np.mean(numeric_soln - analytic_soln) < 1e-6)
 
@@ -115,17 +115,17 @@ class SolowModel(unittest.TestCase):
         self.solver.solve(kind="Legendre",
                           coefs_dict=self.initial_coefs,
                           domain=self.domain)
-        solution = solutions.Solution(self.solver)
+        visualizer = visualizers.Visualizer(self.solver)
 
         # check that solver terminated successfully
-        self.assertTrue(solution.solver.result.success, msg="Solver failed!")
+        self.assertTrue(visualizer.solver.result.success, msg="Solver failed!")
 
         # compute the residuals
-        solution.interpolation_knots = np.linspace(self.domain[0],
-                                                   self.domain[1],
-                                                   1000)
-        residuals = solution.residuals.values
-        normed_residuals = solution.normalized_residuals.values
+        visualizer.interpolation_knots = np.linspace(self.domain[0],
+                                                     self.domain[1],
+                                                     1000)
+        residuals = visualizer.residuals.values
+        normed_residuals = visualizer.normalized_residuals.values
 
         # check that residuals are all close to zero
         mesg = "Legendre residuals:\n{}\n\nDictionary of model params: {}"
@@ -135,8 +135,8 @@ class SolowModel(unittest.TestCase):
                         msg=mesg.format(normed_residuals, self.params))
 
         # check that the numerical and analytic solutions are close
-        numeric_soln = solution.solution.ix[:, 0]
+        numeric_soln = visualizer.solution.ix[:, 0]
         analytic_soln = self.analytic_solution(self.k0,
-                                               solution.interpolation_knots,
+                                               visualizer.interpolation_knots,
                                                **self.params)
         self.assertTrue(np.mean(numeric_soln - analytic_soln) < 1e-6)
