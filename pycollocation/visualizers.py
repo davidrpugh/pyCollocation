@@ -1,16 +1,16 @@
 """
-Base class for all Solution objects.
+Base class for all Visualizer objects.
 
 """
 import numpy as np
 import pandas as pd
 
 
-class Solution(object):
-    """Base class for all Solution objects."""
+class Visualizer(object):
+    """Base class for all Visualizer objects."""
 
     def __init__(self, solver):
-        """Create an instance of the Solution class."""
+        """Create an instance of the Visualizer class."""
         self.solver = solver
 
     @property
