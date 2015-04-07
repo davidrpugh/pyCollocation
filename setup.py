@@ -12,7 +12,7 @@ def write_version_py(filename=None):
     doc += "\nversion = '%s'" % VERSION
     
     if not filename:
-        filename = os.path.join(os.path.dirname(__file__), 'quantecon', 'version.py')
+        filename = os.path.join(os.path.dirname(__file__), 'pycollocation', 'version.py')
     
     fl = open(filename, 'w')
     try:
@@ -24,14 +24,15 @@ write_version_py()  # This is a file used to control the pycollocation.__version
 
 setup(
     name="pyCollocation",
-    version=pycollocation.__version__,
+    version=VERSION,
     license="MIT License",
     author="davidrpugh",
     install_requires=["numpy",
                       "scipy",
                       "sympy",
                       "pandas",
-                      ],
+                      "ipython",
+                     ],
     author_email="david.pugh@maths.ox.ac.uk",
     classifiers=['Development Status :: 1 - Planning',
                  'Intended Audience :: Education',
