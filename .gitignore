@@ -12,3 +12,6 @@ pyCollocation.egg-info/
 
 # ignore build info
 dist/
+
+# ignore version file
+pycollocation/version.py
