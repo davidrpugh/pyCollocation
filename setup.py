@@ -1,4 +1,4 @@
-from disutils.core import setup
+from distutils.core import setup
 
 
 # Meta information
