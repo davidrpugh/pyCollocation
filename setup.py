@@ -1,4 +1,4 @@
-from setuptools import setup
+from disutils.core import setup
 
 
 # Meta information
@@ -21,16 +21,10 @@ CLASSIFIERS = ['Development Status :: 3 - Alpha',
                ]
 
 setup(
-    name="pyCollocation",
-    version='0.2.2-alpha',
+    name="pycollocation",
+    version='0.2.3-alpha',
     license="MIT License",
     author="davidrpugh",
-    install_requires=["numpy",
-                      "scipy",
-                      "sympy",
-                      "pandas",
-                      "ipython",
-                      ],
     description=DESCRIPTION,
     author_email="david.pugh@maths.ox.ac.uk",
     classifiers=CLASSIFIERS,
