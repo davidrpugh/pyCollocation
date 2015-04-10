@@ -1,30 +1,28 @@
 from setuptools import setup
-import os
 
-#-Write Versions File-#
-#~~~~~~~~~~~~~~~~~~~~~#
 
-VERSION = '0.2.1-alpha'
+# Meta information
+DESCRIPTION = ("Python package for solving initial value problems (IVP) " +
+               "and two-point boundary value problems (2PBVP) using the " +
+               "collocation method ")
 
-def write_version_py(filename=None):
-    """This constructs a version file for the project"""
-    doc = "\"\"\"This is a VERSION file and should NOT be manually altered\"\"\""
-    doc += "\nversion = '%s'" % VERSION
-    
-    if not filename:
-        filename = os.path.join(os.path.dirname(__file__), 'pycollocation', 'version.py')
-    
-    fl = open(filename, 'w')
-    try:
-        fl.write(doc)
-    finally:
-        fl.close()
-
-write_version_py()  # This is a file used to control the pycollocation.__version__ attribute
+CLASSIFIERS = ['Development Status :: 3 - Alpha',
+               'Intended Audience :: Education',
+               'Intended Audience :: Science/Research',
+               'License :: OSI Approved :: MIT License',
+               'Operating System :: OS Independent',
+               'Programming Language :: Python',
+               'Programming Language :: Python :: 2',
+               'Programming Language :: Python :: 3',
+               'Programming Language :: Python :: 2.7',
+               'Programming Language :: Python :: 3.3',
+               'Programming Language :: Python :: 3.4',
+               'Topic :: Scientific/Engineering',
+               ]
 
 setup(
     name="pyCollocation",
-    version=VERSION,
+    version='0.2.2-alpha',
     license="MIT License",
     author="davidrpugh",
     install_requires=["numpy",
@@ -32,13 +30,9 @@ setup(
                       "sympy",
                       "pandas",
                       "ipython",
-                     ],
+                      ],
+    description=DESCRIPTION,
     author_email="david.pugh@maths.ox.ac.uk",
-    classifiers=['Development Status :: 1 - Planning',
-                 'Intended Audience :: Education',
-                 'Intended Audience :: Science/Research',
-                 'License :: OSI Approved :: MIT License',
-                 'Operating System :: OS Independent',
-                 'Programming Language :: Python',
-                 ]
+    classifiers=CLASSIFIERS,
+    url='https://github.com/davidrpugh/pyCollocation',
     )
