@@ -30,6 +30,8 @@ Installation
 
 Assuming you have `pip`_ on your computer (as will be the case if you've `installed Anaconda`_) you can install the latest stable release of ``pycollocation`` by typing
     
+.. code:: bash
+
     pip install pycollocation
 
 at a terminal prompt.
