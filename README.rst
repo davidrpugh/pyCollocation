@@ -28,9 +28,12 @@ Python package for solving initial value problems (IVP) and two-point boundary v
 Installation
 ------------
 
-Assuming you have `pip <https://pypi.python.org/pypi/pip>`_ on your computer --- as will be the case if you've `installed Anaconda <http://quant-econ.net/getting_started.html#installing-anaconda>`_ --- you can install the latest stable release of ``pycollocation`` by typing
+Assuming you have `pip`_ on your computer (as will be the case if you've `installed Anaconda`_) you can install the latest stable release of ``pycollocation`` by typing
     pip install pycollocation
 at a terminal prompt.
+
+.. _pip: https://pypi.python.org/pypi/pip
+.. _`installed Anaconda`: http://quant-econ.net/getting_started.html#installing-anaconda
 
 Example notebooks
 -----------------
@@ -47,8 +50,8 @@ There are a number of example notebooks that demonstrate how to use the library 
 
 .. _`Solow model of economic growth`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb
 .. _`Ramsey model of optimal savings`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/ramsey-model.ipynb
-.. `Spence model of costly signaling`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/spence-model.ipynb
-.. `Kiyotaki and Moore model of credit cycles`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/credit-cycles.ipynb
+.. _`Spence model of costly signaling`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/spence-model.ipynb
+.. _`Kiyotaki and Moore model of credit cycles`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/credit-cycles.ipynb
 
 Physics
 ~~~~~~~
