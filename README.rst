@@ -2,6 +2,7 @@ pyCollocation
 =============
 
 |Build Status| |Coverage Status| |Development Status| |Downloads| |DOI|
+
 .. |Build Status| image:: https://travis-ci.org/davidrpugh/pyCollocation.svg?branch=master
    :target: https://travis-ci.org/davidrpugh/pyCollocation
 .. |Coverage Status| image:: https://coveralls.io/repos/davidrpugh/pyCollocation/badge.svg?branch=master
@@ -17,7 +18,7 @@ pyCollocation
 
 Python package for solving initial value problems (IVP) and two-point boundary value problems (2PBVP) using the collocation method with various basis functions. Currently I have implemented the following basis functions:
 
-* Orthogonal polynomials: Chebyshev_, Laguerre_, Legendre_, and Hermite_.
+- Orthogonal polynomials: Chebyshev_, Laguerre_, Legendre_, and Hermite_.
 
 .. _Chebyshev: http://en.wikipedia.org/wiki/Chebyshev_polynomials
 .. _Laguerre: http://en.wikipedia.org/wiki/Laguerre_polynomials
@@ -26,6 +27,7 @@ Python package for solving initial value problems (IVP) and two-point boundary v
 
 Installation
 ------------
+
 Assuming you have `pip <https://pypi.python.org/pypi/pip>`_ on your computer --- as will be the case if you've `installed Anaconda <http://quant-econ.net/getting_started.html#installing-anaconda>`_ --- you can install the latest stable release of ``pycollocation`` by typing
     pip install pycollocation
 at a terminal prompt.
@@ -39,14 +41,14 @@ Economics
 There are a number of example notebooks that demonstrate how to use the library to solve seminal models in the economics literature.
 
 - `Solow model of economic growth`_
-- `Ramsey-Cass-Koopmans model of optimal savings`_
+- `Ramsey model of optimal savings`_
 - `Spence model of costly signaling`_
-- `Credit cycles`_
+- `Kiyotaki and Moore model of credit cycles`_
 
 .. _`Solow model of economic growth`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb
-.. _`Ramsey-Cass-Koopmans model of optimal savings`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/ramsey-model.ipynb
+.. _`Ramsey model of optimal savings`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/ramsey-model.ipynb
 .. `Spence model of costly signaling`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/spence-model.ipynb
-.. `Credit cycles`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/credit-cycles.ipynb
+.. `Kiyotaki and Moore model of credit cycles`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/credit-cycles.ipynb
 
 Physics
 ~~~~~~~
