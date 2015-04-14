@@ -10,6 +10,9 @@
 # ignore build info
 dist/
 
+# ignore *.egg-info
+*.egg-info/
+
 # ignore version file
 pycollocation/version.py
 
