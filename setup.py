@@ -22,7 +22,7 @@ CLASSIFIERS = ['Development Status :: 3 - Alpha',
 setup(
     name="pycollocation",
     packages=['pycollocation'],
-    version='0.2.3-alpha',
+    version='0.2.4-alpha',
     license="MIT License",
     author="davidrpugh",
     author_email="david.pugh@maths.ox.ac.uk",

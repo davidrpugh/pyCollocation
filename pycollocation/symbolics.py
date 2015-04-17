@@ -52,7 +52,7 @@ class SymbolicModelLike(SymbolicBase):
     @property
     def _symbolic_vars(self):
         """List of symbolic model variables."""
-        return [self.independent_var] + self.dependent_vars
+        return sym.var([self.independent_var] + self.dependent_vars)
 
     def _clear_cache(self):
         """Clear cached symbolic Jacobian."""
