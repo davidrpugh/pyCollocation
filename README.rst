@@ -53,7 +53,7 @@ There are a number of example notebooks that demonstrate how to use the library 
 - `Kiyotaki and Moore model of credit cycles`_
 
 .. _`Solow model of economic growth`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb
-.. _`Ramsey model of optimal savings`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/ramsey-model.ipynb
+.. _`Ramsey model of optimal savings`: http://nbviewer.ipython.org/github/ramseyPy/ramseyPy/blob/master/examples/ramsey-model.ipynb
 .. _`Spence model of costly signaling`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/spence-model.ipynb
 .. _`Kiyotaki and Moore model of credit cycles`: http://nbviewer.ipython.org/github/davidrpugh/pyCollocation/blob/master/examples/credit-cycles.ipynb
 
