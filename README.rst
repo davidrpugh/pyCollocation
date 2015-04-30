@@ -1,7 +1,7 @@
 pyCollocation
 =============
 
-|Build Status| |Coverage Status| |Development Status| |Downloads| |DOI|
+|Build Status| |Coverage Status| |Development Status| |Latest Version| |Downloads| |DOI|
 
 .. |Build Status| image:: https://travis-ci.org/davidrpugh/pyCollocation.svg?branch=master
    :target: https://travis-ci.org/davidrpugh/pyCollocation
@@ -9,9 +9,9 @@ pyCollocation
    :target: https://coveralls.io/r/davidrpugh/pyCollocation?branch=master
 .. |Development Status| image:: https://pypip.in/status/pyCollocation/badge.svg
    :target: https://pypi.python.org/pypi/pyCollocation/
-.. |Latest Version] image:: https://pypip.in/version/pyCollocation/badge.svg
+.. |Latest Version| image:: https://img.shields.io/pypi/v/pyCollocation.svg
    :target: https://pypi.python.org/pypi/pyCollocation/
-.. |Downloads| image:: https://pypip.in/download/pyCollocation/badge.svg
+.. |Downloads| image:: https://img.shields.io/pypi/dm/pyCollocation.svg
    :target: https://pypi.python.org/pypi/pyCollocation/
 .. |DOI| image:: https://zenodo.org/badge/doi/10.5281/zenodo.16761.svg
    :target: http://dx.doi.org/10.5281/zenodo.16761
