@@ -1,0 +1,9 @@
+# These are the required packages for the pycollocation package to build
+Sphinx
+ipython
+numpy
+numpydoc
+scipy
+matplotlib
+sympy
+pandas

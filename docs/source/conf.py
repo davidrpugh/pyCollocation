@@ -20,6 +20,7 @@ import shlex
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../pycollocation'))
 
 # -- General configuration ------------------------------------------------
 
@@ -31,12 +32,20 @@ import shlex
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.extlinks',
+    'sphinx.ext.autosummary',
+    'numpydoc',
+    'IPython.sphinxext.ipython_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'matplotlib.sphinxext.only_directives',
+    'matplotlib.sphinxext.plot_directive',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -116,7 +125,7 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
