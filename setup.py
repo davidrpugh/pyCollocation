@@ -1,4 +1,12 @@
+import os
+
 from distutils.core import setup
+
+
+def read(*paths):
+    """Build a file path from *paths* and return the contents."""
+    with open(os.path.join(*paths), 'r') as f:
+        return f.read()
 
 # Meta information
 DESCRIPTION = ("Python package for solving initial value problems (IVP) " +
@@ -22,11 +30,12 @@ CLASSIFIERS = ['Development Status :: 3 - Alpha',
 setup(
     name="pycollocation",
     packages=['pycollocation'],
-    version='0.2.4-alpha',
+    version='0.3.0-alpha',
+    description=DESCRIPTION,
+    long_description=read('README.rst'),
     license="MIT License",
     author="davidrpugh",
     author_email="david.pugh@maths.ox.ac.uk",
     url='https://github.com/davidrpugh/pyCollocation',
-    description=DESCRIPTION,
     classifiers=CLASSIFIERS,
     )
