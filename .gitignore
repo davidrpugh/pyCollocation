@@ -15,3 +15,6 @@ pycollocation/version.py
 
 #ignore MANIFEST
 MANIFEST
+
+# ignore egg-info
+pycollocation.egg-info
