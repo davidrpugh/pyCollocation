@@ -4,6 +4,7 @@ Classes for representing two-point boundary value problems.
 @author : David R. Pugh
 
 """
+import equilibria
 import models
 
 
@@ -55,6 +56,17 @@ class SymbolicTwoPointBVPLike(TwoPointBVPLike, models.SymbolicModelLike):
     __lower_boundary_condition = None
 
     __upper_boundary_condition = None
+
+    @property
+    def equilibrium(self):
+        """
+        Object representing the model equilibrium.
+
+        :getter: Return the current object.
+        :type: equilibria.Equilibrium
+
+        """
+        return equilibria.Equilibrium(self)
 
     @property
     def _lower_boundary_condition(self):
@@ -124,7 +136,7 @@ class TwoPointBVP(TwoPointBVPLike):
     def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
         """Create an instance of a two-point boundary value problem (BVP)."""
         self.boundary_conditions = boundary_conditions
-        self.dependent = dependent_vars
+        self.dependent_vars = dependent_vars
         self.independent_var = independent_var
         self.params = params
         self.rhs = rhs
