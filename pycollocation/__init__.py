@@ -5,9 +5,6 @@ Objects imported here will live in the `pycollocation` namespace
 __all__ = ["TwoPointBVP", "TwoPointBVPLike", "SymbolicTwoPointBVPLike",
            "SymbolicTwoPointBVP", "OrthogonalPolynomialSolver", "Visualizer"]
 
-from . import equilibria
-from . import bvp
-from . import models
 from . import orthogonal_polynomials
 from . import visualizers
 
