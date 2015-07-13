@@ -8,7 +8,7 @@ import collections
 
 import sympy as sym
 
-import symbolics
+from . import symbolics
 
 
 class ModelLike(object):
@@ -124,7 +124,7 @@ class ModelLike(object):
 
 class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
 
-    _cached_rhs_functions = {}  # not sure if this is good practice!
+    _cached_rhs_functions = collections.defaultdict(lambda: None)
 
     __symbolic_jacobian = None
 

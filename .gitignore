@@ -21,3 +21,7 @@ MANIFEST
 
 # ignore egg-info
 pycollocation.egg-info
+
+# ignore docs/build
+docs/build
+

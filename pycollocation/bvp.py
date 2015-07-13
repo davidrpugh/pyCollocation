@@ -4,8 +4,8 @@ Classes for representing two-point boundary value problems.
 @author : David R. Pugh
 
 """
-import equilibria
-import models
+from . import equilibria
+from . import models
 
 
 class TwoPointBVPLike(object):
