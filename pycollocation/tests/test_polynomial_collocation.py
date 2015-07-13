@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import sympy as sym
 
-from .. boundary_value_problems import SymbolicBoundaryValueProblem
+from .. bvp import SymbolicTwoPointBVP
 from .. orthogonal_polynomials import OrthogonalPolynomialSolver
 from .. import visualizers
 
@@ -60,11 +60,11 @@ class SolowModel(unittest.TestCase):
         bcs = {'lower': [k - self.k0], 'upper': None}
 
         # set the model instance
-        self.model = SymbolicBoundaryValueProblem(dependent_vars=['k'],
-                                                  independent_var='t',
-                                                  rhs=rhs,
-                                                  boundary_conditions=bcs,
-                                                  params=self.params)
+        self.model = SymbolicTwoPointBVP(boundary_conditions=bcs,
+                                         dependent_vars=['k'],
+                                         independent_var='t',
+                                         params=self.params,
+                                         rhs=rhs)
 
         # set the solver instance
         self.solver = OrthogonalPolynomialSolver(self.model)

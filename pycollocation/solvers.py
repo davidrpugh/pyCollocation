@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import boundary_value_problems
+from . import bvp
 
 
 class Solver(object):
@@ -193,7 +193,7 @@ class Solver(object):
     @staticmethod
     def _validate_model(model):
         """Validate the dictionary of parameters."""
-        if not isinstance(model, boundary_value_problems.BoundaryValueProblem):
+        if not issubclass(model.__class__, bvp.TwoPointBVPLike):
             mesg = "Attribute 'model' must have type BoundaryValueProblem, not {}"
             raise AttributeError(mesg.format(model.__class__))
         else:
