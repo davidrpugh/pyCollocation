@@ -131,7 +131,7 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
     @property
     def _symbolic_args(self):
         """List of symbolic arguments used to lambdify expressions."""
-        return self._symbolic_vars + self._symbolic_params.values()
+        return self._symbolic_vars + list(self._symbolic_params.values())
 
     @property
     def _symbolic_jacobian(self):
