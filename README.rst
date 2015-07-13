@@ -9,6 +9,8 @@ pyCollocation
    :target: https://coveralls.io/r/davidrpugh/pyCollocation?branch=master
 .. |Codacy Badge| image:: https://www.codacy.com/project/badge/4838082c243c48afa392aabc7cce54ab
    :target: https://www.codacy.com/app/drobert-pugh/pyCollocation
+.. |Scrutinizer Code Quality| image:: https://scrutinizer-ci.com/g/davidrpugh/pyCollocation/badges/quality-score.png?b=master
+   :target: https://scrutinizer-ci.com/g/davidrpugh/pyCollocation/?branch=master
 .. |Latest Version| image:: https://img.shields.io/pypi/v/pyCollocation.svg
    :target: https://pypi.python.org/pypi/pyCollocation/
 .. |Downloads| image:: https://img.shields.io/pypi/dm/pyCollocation.svg

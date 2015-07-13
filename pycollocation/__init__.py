@@ -6,6 +6,7 @@ __all__ = ["TwoPointBVP", "TwoPointBVPLike", "SymbolicTwoPointBVPLike",
            "SymbolicTwoPointBVP", "OrthogonalPolynomialSolver", "Visualizer"]
 
 from . import bvp
+from . import equilibria
 from . import models
 from . import orthogonal_polynomials
 from . import visualizers
