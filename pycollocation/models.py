@@ -182,5 +182,4 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
         exprs = {}
         for var, expr in rhs.items():
             exprs[var] = self._validate_expression(expr)
-        else:
-            return exprs
+        return exprs
