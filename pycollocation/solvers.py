@@ -6,17 +6,17 @@ from . import bvp
 class Solver(object):
     """Base class for all Solvers."""
 
-    def __init__(self, model):
+    def __init__(self, problem):
         """
         Create an instance of the Solver class.
 
         Parameters
         ----------
-        model : models.Model
-            An instance of models.Model to solve.
+        problem : bvp.TwoPointBVPLike
+            An instance of bvp.TwoPointBVPLike to solve.
 
         """
-        self.model = model
+        self.problem = problem
 
     @property
     def coefficients(self):
@@ -146,7 +146,7 @@ class Solver(object):
 
     def _evaluate_basis_funcs(self, basis_funcs, points):
         """Return a list of basis functions evaluated at some points."""
-        return [basis_funcs[var](points) for var in self.model.dependent_vars]
+        return [basis_funcs[var](points) for var in self.problem.dependent_vars]
 
     def _evaluate_boundary_residuals(self, basis_funcs, domain):
         """Return a list of boundary conditions evaluated on the domain."""
@@ -163,21 +163,21 @@ class Solver(object):
 
     def _evaluate_lower_boundary_residual(self, basis_funcs, lower_bound):
         """Return the lower boundary condition evaluated on the domain."""
-        if self.model._lower_boundary_condition is not None:
+        if self.problem._lower_boundary_condition is not None:
             args = (self._evaluate_basis_funcs(basis_funcs, lower_bound) +
-                    list(self.model.params.values()))
-            return self.model._lower_boundary_condition(lower_bound, *args)
+                    list(self.problem.params.values()))
+            return self.problem._lower_boundary_condition(lower_bound, *args)
 
     def _evaluate_residual_funcs(self, residual_funcs, nodes):
         """Return a list of residual functions evaluated at collocation nodes."""
-        return [residual_funcs[var](nodes[var]) for var in self.model.dependent_vars]
+        return [residual_funcs[var](nodes[var]) for var in self.problem.dependent_vars]
 
     def _evaluate_upper_boundary_residual(self, basis_funcs, upper_bound):
         """Return the upper boundary condition evaluated on the domain."""
-        if self.model._upper_boundary_condition is not None:
+        if self.problem._upper_boundary_condition is not None:
             args = (self._evaluate_basis_funcs(basis_funcs, upper_bound) +
-                    list(self.model.params.values()))
-            return self.model._upper_boundary_condition(upper_bound, *args)
+                    list(self.problem.params.values()))
+            return self.problem._upper_boundary_condition(upper_bound, *args)
 
     def _residual_function_factory(self, var, basis_derivs, basis_funcs):
         """Generate the residual function for a given variable."""
@@ -185,8 +185,8 @@ class Solver(object):
         def residual_function(t):
             """Residual function evaluated at array of points t."""
             args = (self._evaluate_basis_funcs(basis_funcs, t) +
-                    list(self.model.params.values()))
-            return basis_derivs[var](t) - self.model._rhs_functions(var)(t, *args)
+                    list(self.problem.params.values()))
+            return basis_derivs[var](t) - self.problem._rhs_functions(var)(t, *args)
 
         return residual_function
 

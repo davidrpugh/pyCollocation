@@ -1,7 +1,7 @@
 pyCollocation
 =============
 
-|Build Status| |Coverage Status| |Codacy Badge| |Latest Version| |Downloads| |DOI|
+|Build Status| |Coverage Status| |Documentation Status| |Codacy Badge| |Scrutinizer Code Quality| |Latest Version| |Downloads| |DOI|
 
 .. |Build Status| image:: https://travis-ci.org/davidrpugh/pyCollocation.svg?branch=master
    :target: https://travis-ci.org/davidrpugh/pyCollocation
@@ -17,6 +17,9 @@ pyCollocation
    :target: https://pypi.python.org/pypi/pyCollocation/
 .. |DOI| image:: https://zenodo.org/badge/doi/10.5281/zenodo.17283.svg
    :target: http://dx.doi.org/10.5281/zenodo.17283
+.. |Documentation Status| image:: https://readthedocs.org/projects/pycollocation/badge/?version=latest
+   :target: https://readthedocs.org/projects/pycollocation/?badge=latest
+
 
 Python package for solving initial value problems (IVP) and two-point boundary value problems (2PBVP) using the collocation method with various basis functions. Currently I have implemented the following basis functions:
 
