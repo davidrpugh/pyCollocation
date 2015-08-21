@@ -92,6 +92,7 @@ class SymbolicTwoPointBVPLike(TwoPointBVPLike, models.SymbolicModelLike):
 
     def _validate_boundary(self, conditions):
         """Validate a dictionary of lower and upper boundary conditions."""
+        super(SymbolicTwoPointBVPLike, self)._validate_boundary(conditions)
         bcs = {'lower': self._validate_boundary_exprs(conditions['lower']),
                'upper': self._validate_boundary_exprs(conditions['upper'])}
         return bcs
@@ -109,25 +110,13 @@ class SymbolicTwoPointBVP(SymbolicTwoPointBVPLike):
 
     def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
         """Create an instance of a two-point boundary value problem (BVP)."""
-        self.boundary_conditions = boundary_conditions
         self.dependent_vars = dependent_vars
         self.independent_var = independent_var
         self.params = params
         self.rhs = rhs
 
-    def _validate_boundary(self, conditions):
-        """Validate a dictionary of lower and upper boundary conditions."""
-        super(SymbolicTwoPointBVP, self)._validate_boundary(conditions)
-        bcs = {'lower': self._validate_boundary_exprs(conditions['lower']),
-               'upper': self._validate_boundary_exprs(conditions['upper'])}
-        return bcs
-
-    def _validate_boundary_exprs(self, expressions):
-        """Check that lower/upper boundary_conditions are expressions."""
-        if expressions is None:
-            return None
-        else:
-            return [self._validate_expression(expr) for expr in expressions]
+        # validation of boundary conditions depends on dependent_vars!
+        self.boundary_conditions = boundary_conditions
 
 
 class TwoPointBVP(TwoPointBVPLike):
@@ -135,8 +124,10 @@ class TwoPointBVP(TwoPointBVPLike):
 
     def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
         """Create an instance of a two-point boundary value problem (BVP)."""
-        self.boundary_conditions = boundary_conditions
         self.dependent_vars = dependent_vars
         self.independent_var = independent_var
         self.params = params
         self.rhs = rhs
+
+        # validation of boundary conditions depends on dependent_vars!
+        self.boundary_conditions = boundary_conditions
