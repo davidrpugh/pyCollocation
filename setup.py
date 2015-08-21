@@ -30,7 +30,7 @@ CLASSIFIERS = ['Development Status :: 3 - Alpha',
 setup(
     name="pycollocation",
     packages=['pycollocation'],
-    version='0.4.0-alpha',
+    version='0.4.1-alpha',
     description=DESCRIPTION,
     long_description=read('README.rst'),
     license="MIT License",
