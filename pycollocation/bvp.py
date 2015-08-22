@@ -8,7 +8,18 @@ from . import equilibria
 from . import models
 
 
-class TwoPointBVPLike(object):
+class TwoPointBVP(object):
+    """Class for representing two-point boundary value problems."""
+
+    def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
+        """Create an instance of a two-point boundary value problem (BVP)."""
+        self.dependent_vars = dependent_vars
+        self.independent_var = independent_var
+        self.params = params
+        self.rhs = rhs
+
+        # validation of boundary conditions depends on dependent_vars!
+        self.boundary_conditions = boundary_conditions
 
     @property
     def boundary_conditions(self):
@@ -51,7 +62,7 @@ class TwoPointBVPLike(object):
             return conditions
 
 
-class SymbolicTwoPointBVPLike(TwoPointBVPLike, models.SymbolicModelLike):
+class SymbolicTwoPointBVP(TwoPointBVP, models.SymbolicModelLike):
 
     __lower_boundary_condition = None
 
@@ -92,7 +103,7 @@ class SymbolicTwoPointBVPLike(TwoPointBVPLike, models.SymbolicModelLike):
 
     def _validate_boundary(self, conditions):
         """Validate a dictionary of lower and upper boundary conditions."""
-        super(SymbolicTwoPointBVPLike, self)._validate_boundary(conditions)
+        super(SymbolicTwoPointBVP, self)._validate_boundary(conditions)
         bcs = {'lower': self._validate_boundary_exprs(conditions['lower']),
                'upper': self._validate_boundary_exprs(conditions['upper'])}
         return bcs
@@ -103,31 +114,3 @@ class SymbolicTwoPointBVPLike(TwoPointBVPLike, models.SymbolicModelLike):
             return None
         else:
             return [self._validate_expression(expr) for expr in expressions]
-
-
-class SymbolicTwoPointBVP(SymbolicTwoPointBVPLike):
-    """Class for representing symbolic two-point boundary value problems."""
-
-    def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
-        """Create an instance of a two-point boundary value problem (BVP)."""
-        self.dependent_vars = dependent_vars
-        self.independent_var = independent_var
-        self.params = params
-        self.rhs = rhs
-
-        # validation of boundary conditions depends on dependent_vars!
-        self.boundary_conditions = boundary_conditions
-
-
-class TwoPointBVP(TwoPointBVPLike):
-    """Class for representing two-point boundary value problems."""
-
-    def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
-        """Create an instance of a two-point boundary value problem (BVP)."""
-        self.dependent_vars = dependent_vars
-        self.independent_var = independent_var
-        self.params = params
-        self.rhs = rhs
-
-        # validation of boundary conditions depends on dependent_vars!
-        self.boundary_conditions = boundary_conditions
