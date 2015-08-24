@@ -108,8 +108,6 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
 
     _cached_rhs_functions = collections.defaultdict(lambda: None)
 
-    __symbolic_jacobian = None
-
     @property
     def _symbolic_args(self):
         """List of symbolic arguments used to lambdify expressions."""
@@ -118,10 +116,8 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
     @property
     def _symbolic_jacobian(self):
         """Symbolic Jacobian matrix of partial derivatives."""
-        if self.__symbolic_jacobian is None:
-            args = self.dependent_vars
-            self.__symbolic_jacobian = self._symbolic_system.jacobian(args)
-        return self.__symbolic_jacobian
+        args = self.dependent_vars
+        return self._symbolic_system.jacobian(args)
 
     @property
     def _symbolic_params(self):
@@ -137,10 +133,6 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
     def _symbolic_vars(self):
         """List of symbolic model variables."""
         return sym.symbols([self.independent_var] + self.dependent_vars)
-
-    def _clear_cache(self):
-        """Clear cached symbolic Jacobian."""
-        self.__symbolic_jacobian = None
 
     def _rhs_functions(self, var):
         """Cache lamdified rhs functions for numerical evaluation."""
