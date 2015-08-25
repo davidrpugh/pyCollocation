@@ -19,16 +19,10 @@ class ModelLike(object):
         Model dependent variables.
 
         :getter: Return the model dependent variables.
-        :setter: Set new model dependent variables.
         :type: list
 
         """
         return self._dependent_vars
-
-    @dependent_vars.setter
-    def dependent_vars(self, variables):
-        """Set new model dependent variables."""
-        self._dependent_vars = self._validate_variables(variables)
 
     @property
     def independent_var(self):
@@ -36,16 +30,10 @@ class ModelLike(object):
         Model independent variable.
 
         :getter: Return the model independent variable.
-        :setter: Set new model independent variable.
         :type: string
 
         """
         return self._independent_var
-
-    @independent_var.setter
-    def independent_var(self, variable):
-        """Set new model independent variable."""
-        self._independent_var = self._validate_variable(variable)
 
     @property
     def params(self):
@@ -71,16 +59,10 @@ class ModelLike(object):
         Right-hand side of the system of differential/difference equations.
 
         :getter: Return the right-hand side of the system of equations.
-        :setter: Set new value for the right-hand side of the system of equations.
         :type: dict
 
         """
         return self._rhs
-
-    @rhs.setter
-    def rhs(self, rhs):
-        """Set new value for the right-hand side of the system of equations."""
-        self._rhs = self._validate_rhs(rhs)
 
     @staticmethod
     def _order_params(params):
@@ -101,32 +83,28 @@ class ModelLike(object):
         if not isinstance(rhs, dict):
             mesg = "Attribute `rhs` must be of type `dict` not {}"
             raise AttributeError(mesg.format(rhs.__class__))
-        elif not (len(rhs) == len(self.dependent_vars)):
+        elif not (len(rhs.keys()) == len(self.dependent_vars)):
             mesg = "Number of equations must equal number of dependent vars."
             raise ValueError(mesg)
         else:
             return rhs
 
     @staticmethod
-    def _validate_variable(symbol):
-        """Validate the independent_var attribute."""
-        if not isinstance(symbol, str):
+    def _validate_variable(variable):
+        """Validate a single variable."""
+        if not isinstance(variable, str):
             mesg = "Attribute must be of type `string` not {}"
-            raise AttributeError(mesg.format(symbol.__class__))
+            raise AttributeError(mesg.format(variable.__class__))
         else:
-            return symbol
+            return variable
 
     @classmethod
-    def _validate_variables(cls, symbols):
-        """Validate the dependent_vars attribute."""
-        return [cls._validate_variable(symbol) for symbol in symbols]
+    def _validate_variables(cls, variables):
+        """Validate a collection of variables."""
+        return [cls._validate_variable(variable) for variable in variables]
 
 
 class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
-
-    _cached_rhs_functions = collections.defaultdict(lambda: None)
-
-    __symbolic_jacobian = None
 
     @property
     def _symbolic_args(self):
@@ -136,10 +114,8 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
     @property
     def _symbolic_jacobian(self):
         """Symbolic Jacobian matrix of partial derivatives."""
-        if self.__symbolic_jacobian is None:
-            args = self.dependent_vars
-            self.__symbolic_jacobian = self._symbolic_system.jacobian(args)
-        return self.__symbolic_jacobian
+        args = self.dependent_vars
+        return self._symbolic_system.jacobian(args)
 
     @property
     def _symbolic_params(self):
@@ -156,16 +132,9 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
         """List of symbolic model variables."""
         return sym.symbols([self.independent_var] + self.dependent_vars)
 
-    def _clear_cache(self):
-        """Clear cached symbolic Jacobian."""
-        self.__symbolic_jacobian = None
-
     def _rhs_functions(self, var):
         """Cache lamdified rhs functions for numerical evaluation."""
-        if self._cached_rhs_functions.get(var) is None:
-            eqn = self.rhs[var]
-            self._cached_rhs_functions[var] = self._lambdify_factory(eqn)
-        return self._cached_rhs_functions[var]
+        return self._lambdify_factory(self.rhs[var])
 
     @staticmethod
     def _validate_expression(expression):

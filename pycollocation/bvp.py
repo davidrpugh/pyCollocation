@@ -13,13 +13,14 @@ class TwoPointBVP(object):
 
     def __init__(self, boundary_conditions, dependent_vars, independent_var, params, rhs):
         """Create an instance of a two-point boundary value problem (BVP)."""
-        self.dependent_vars = dependent_vars
-        self.independent_var = independent_var
-        self.params = params
-        self.rhs = rhs
+        self._dependent_vars = self._validate_variables(dependent_vars)
+        self._independent_var = self._validate_variable(independent_var)
+        valid_params = self._validate_params(params)
+        self._params = self._order_params(valid_params)
+        self._rhs = self._validate_rhs(rhs)
 
         # validation of boundary conditions depends on dependent_vars!
-        self.boundary_conditions = boundary_conditions
+        self._boundary_conditions = self._validate_boundary(boundary_conditions)
 
     @property
     def boundary_conditions(self):
@@ -32,11 +33,6 @@ class TwoPointBVP(object):
 
         """
         return self._boundary_conditions
-
-    @boundary_conditions.setter
-    def boundary_conditions(self, conditions):
-        """Set new boundary conditions for the model."""
-        self._boundary_conditions = self._validate_boundary(conditions)
 
     def _sufficient_boundary(self, conditions):
         """Check that there are sufficient boundary conditions."""
