@@ -106,8 +106,6 @@ class ModelLike(object):
 
 class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
 
-    _cached_rhs_functions = collections.defaultdict(lambda: None)
-
     @property
     def _symbolic_args(self):
         """List of symbolic arguments used to lambdify expressions."""
@@ -136,10 +134,7 @@ class SymbolicModelLike(symbolics.SymbolicLike, ModelLike):
 
     def _rhs_functions(self, var):
         """Cache lamdified rhs functions for numerical evaluation."""
-        if self._cached_rhs_functions.get(var) is None:
-            eqn = self.rhs[var]
-            self._cached_rhs_functions[var] = self._lambdify_factory(eqn)
-        return self._cached_rhs_functions[var]
+        return self._lambdify_factory(self.rhs[var])
 
     @staticmethod
     def _validate_expression(expression):
