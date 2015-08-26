@@ -1,200 +1,86 @@
 import numpy as np
+from scipy import optimize
 
-from . import bvp
 
-
-class Solver(object):
-    """Base class for all Solvers."""
-
-    def __init__(self, problem):
-        """
-        Create an instance of the Solver class.
-
-        Parameters
-        ----------
-        problem : bvp.TwoPointBVPLike
-            An instance of bvp.TwoPointBVPLike to solve.
-
-        """
-        self.problem = problem
-
-    @property
-    def coefficients(self):
-        """
-        Coefficients to use when constructing the approximating polynomials.
-
-        :getter: Return the `coefficients` attribute.
-        :type: dict
-
-        """
-        return self._coefs_array_to_dict(self.result.x, self.degrees)
-
-    @property
-    def derivatives(self):
-        """
-        Derivatives of the approximating basis functions.
-
-        :getter: Return the `derivatives` attribute.
-        :type: dict
-
-        """
-        return self._construct_basis_derivs(self.coefficients, self.kind, self.domain)
-
-    @property
-    def functions(self):
-        """
-        The basis functions used to approximate the solution to the model.
-
-        :getter: Return the `functions` attribute.
-        :type: dict
-
-        """
-        return self._construct_basis_funcs(self.coefficients, self.kind, self.domain)
-
-    @property
-    def model(self):
-        """
-        Symbolic representation of the model to solve.
-
-        :getter: Return the current model.
-        :setter: Set a new model to solve.
-        :type: models.Model
-
-        """
-        return self._model
-
-    @model.setter
-    def model(self, model):
-        """Set a new model to solve."""
-        self._model = self._validate_model(model)
-
-    @property
-    def result(self):
-        """
-        Result object
-
-        :getter: Return the current result object.
-        :type: optimize.Result
-
-        """
-        return self._result
-
-    @property
-    def residual_functions(self):
-        """
-        Residual functions
-
-        :getter: Return the current residual functions.
-
-        """
-        return self._construct_residual_funcs(self.derivatives, self.functions)
-
-    @classmethod
-    def _basis_derivative_factory(cls, *args, **kwargs):
-        """Factory method for constructing derivatives of basis functions."""
-        raise NotImplementedError
-
-    @classmethod
-    def _basis_function_factory(cls, *args, **kwargs):
-        """Factory method for constructing basis functions."""
-        raise NotImplementedError
+class SolverBase(object):
 
     @staticmethod
-    def _coefs_array_to_dict(coefs_array, degrees):
-        """Split array of coefs into dict mapping symbols to coef arrays."""
-        precondition = coefs_array.size == sum(degrees.values()) + len(degrees)
-        assert precondition, "The coefs array must conform with degree list!"
-
-        coefs_dict = {}
-        for var, degree in degrees.items():
-            coefs_dict[var] = coefs_array[:degree+1]
-            coefs_array = coefs_array[degree+1:]
-
-        postcondition = len(coefs_dict) == len(degrees)
-        assert postcondition, "Length of coefs and degree lists must be equal!"
-
-        return coefs_dict
-
-    def _coefs_dict_to_array(self, coefs_dict):
-        """Cast dict mapping symbol to coef arrays into array of coefs."""
-        coefs_list = []
-        for var in coefs_dict.keys():
-            coef_array = coefs_dict[var]
-            coefs_list.append(coef_array)
-        return np.hstack(coefs_list)
-
-    def _construct_basis_funcs(self, coefs, *args, **kwargs):
-        """Return dict of basis functions given coefficients."""
-        basis_funcs = {}
-        for var, coef in coefs.items():
-            basis_funcs[var] = self._basis_function_factory(coef, *args, **kwargs)
-        return basis_funcs
-
-    def _construct_basis_derivs(self, coefs, *args, **kwargs):
-        """Return dict of basis function derivatives given coefficients."""
-        basis_derivs = {}
-        for var, coef in coefs.items():
-            basis_derivs[var] = self._basis_derivative_factory(coef, *args, **kwargs)
-        return basis_derivs
-
-    def _construct_residual_funcs(self, basis_derivs, basis_funcs):
-        """Return dict of residual functions for given basis funcs and derivs."""
-        residual_funcs = {}
-        for var, basis_deriv in basis_derivs.items():
-            residual_funcs[var] = self._residual_function_factory(var, basis_derivs, basis_funcs)
-        return residual_funcs
-
-    def _evaluate_basis_funcs(self, basis_funcs, points):
-        """Return a list of basis functions evaluated at some points."""
-        return [basis_funcs[var](points) for var in self.problem.dependent_vars]
-
-    def _evaluate_boundary_residuals(self, basis_funcs, domain):
-        """Return a list of boundary conditions evaluated on the domain."""
-        lower_residual = self._evaluate_lower_boundary_residual(basis_funcs, domain[0])
-        upper_residual = self._evaluate_upper_boundary_residual(basis_funcs, domain[1])
-
-        residuals = []
-        if lower_residual is not None:
-            residuals.append(lower_residual)
-        if upper_residual is not None:
-            residuals.append(upper_residual)
-
-        return residuals
-
-    def _evaluate_lower_boundary_residual(self, basis_funcs, lower_bound):
-        """Return the lower boundary condition evaluated on the domain."""
-        if self.problem._lower_boundary_condition is not None:
-            args = (self._evaluate_basis_funcs(basis_funcs, lower_bound) +
-                    list(self.problem.params.values()))
-            return self.problem._lower_boundary_condition(lower_bound, *args)
-
-    def _evaluate_residual_funcs(self, residual_funcs, nodes):
-        """Return a list of residual functions evaluated at collocation nodes."""
-        return [residual_funcs[var](nodes[var]) for var in self.problem.dependent_vars]
-
-    def _evaluate_upper_boundary_residual(self, basis_funcs, upper_bound):
-        """Return the upper boundary condition evaluated on the domain."""
-        if self.problem._upper_boundary_condition is not None:
-            args = (self._evaluate_basis_funcs(basis_funcs, upper_bound) +
-                    list(self.problem.params.values()))
-            return self.problem._upper_boundary_condition(upper_bound, *args)
-
-    def _residual_function_factory(self, var, basis_derivs, basis_funcs):
-        """Generate the residual function for a given variable."""
-
-        def residual_function(t):
-            """Residual function evaluated at array of points t."""
-            args = (self._evaluate_basis_funcs(basis_funcs, t) +
-                    list(self.problem.params.values()))
-            return basis_derivs[var](t) - self.problem._rhs_functions(var)(t, *args)
-
-        return residual_function
+    def _array_to_list(coefs_array, sections):
+        """Splits an array into equal sections."""
+        return np.split(coefs_array, sections)
 
     @staticmethod
-    def _validate_model(model):
-        """Validate the dictionary of parameters."""
-        if not issubclass(model.__class__, bvp.TwoPointBVPLike):
-            mesg = "Attribute 'model' must have type BoundaryValueProblem, not {}"
-            raise AttributeError(mesg.format(model.__class__))
+    def _evaluate_functions(functions, xs):
+        """Return a list of functions evaluated at given nodes."""
+        return [f(xs) for f in functions]
+
+    @staticmethod
+    def _evaluate_interior_resids(left_hand_sides, right_hand_sides):
+        """Return a list of residuals evaluated at the interior nodes."""
+        return [lhs - rhs for lhs, rhs in zip(left_hand_sides, right_hand_sides)]
+
+    @classmethod
+    def _evaluate_bcs_lower(cls, basis_functions, boundary, params, problem):
+        evaluated_basis_funcs = cls._evaluate_functions(basis_functions, boundary)
+        return problem.bcs_lower(boundary, *evaluated_basis_funcs, **params)
+
+    @classmethod
+    def _evaluate_bcs_upper(cls, basis_functions, boundary, params, problem):
+        evaluated_basis_funcs = cls._evaluate_functions(basis_functions, boundary)
+        return problem.bcs_upper(boundary, *evaluated_basis_funcs, **params)
+
+    @classmethod
+    def _evaluate_rhs(cls, basis_functions, nodes, params, problem):
+        evaluated_basis_funcs = cls._evaluate_functions(basis_functions, nodes)
+        evaluated_rhs = problem.rhs(nodes, *evaluated_basis_funcs, **params)
+        return evaluated_rhs
+
+    def _construct_basis_derivatives(self, coefs, domain, **kwargs):
+        """Return a list of basis functions given a list of coefficients."""
+        return [self.basis_derivative_factory(coef, domain, **kwargs) for coef in coefs]
+
+    def _construct_basis_functions(self, coefs, domain, **kwargs):
+        """Return a list of basis functions given a list of coefficients."""
+        return [self.basis_function_factory(coef, domain, **kwargs) for coef in coefs]
+
+    def _evaluate_collocation_resids(self, coefs_array, domain, nodes, params, problem, kwargs):
+        """Return collocation residuals associated with the current set of coefficients."""
+        coefs_list = self._array_to_list(coefs_array, problem.number_odes)
+        basis_derivs = self._construct_basis_derivatives(coefs_list, domain, **kwargs)
+        basis_funcs = self._construct_basis_functions(coefs_list, domain, **kwargs)
+
+        evaluated_lhs = self._evaluate_functions(basis_derivs, nodes)
+        evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, params, problem)
+
+        interior_resids = self._evaluate_interior_resids(evaluated_lhs, evaluated_rhs)
+        boundary_resids = (self._evaluate_bcs_lower(basis_funcs, domain[0], params, problem) +
+                           self._evaluate_bcs_upper(basis_funcs, domain[1], params, problem))
+        collocation_resids = interior_resids + boundary_resids
+
+        return np.hstack(collocation_resids)
+
+    def basis_derivative_factory(self, coef, domain, **kwargs):
+        raise NotImplementedError
+
+    def basis_functions_factory(self, coef, domain, **kwargs):
+        raise NotImplementedError
+
+    def collocation_nodes(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def solve(self, coefs_array, domain, nodes, params, problem,
+              solver_options=None, **kwargs):
+        """Solve a boundary value problem using orthogonal collocation."""
+        if solver_options is None:
+            solver_options = {}
+
+        result = optimize.root(self._evaluate_collocation_resids,
+                               x0=coefs_array,
+                               args=(domain, nodes, params, problem, kwargs),
+                               **solver_options)
+
+        if result.success:
+            solution_coefs = self._array_to_list(result.x, problem.number_odes)
+            return self._construct_basis_functions(solution_coefs, domain, **kwargs)
         else:
-            return model
+            return result
