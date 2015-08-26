@@ -30,6 +30,15 @@ class SolverBase(object):
         return problem.bcs_upper(boundary, *evaluated_basis_funcs, **params)
 
     @classmethod
+    def _evaluate_boundary_resids(cls, basis_functions, domain, params, problem):
+        boundary_resids = []
+        if problem.bcs_lower is not None:
+            boundary_resids.append(cls._evaluate_bcs_lower(basis_functions, domain[0], params, problem))
+        if problem.bcs_upper is not None:
+            boundary_resids.append(cls._evaluate_bcs_upper(basis_functions, domain[1], params, problem))
+        return boundary_resids
+
+    @classmethod
     def _evaluate_rhs(cls, basis_functions, nodes, params, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_functions, nodes)
         evaluated_rhs = problem.rhs(nodes, *evaluated_basis_funcs, **params)
@@ -53,8 +62,7 @@ class SolverBase(object):
         evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, params, problem)
 
         interior_resids = self._evaluate_interior_resids(evaluated_lhs, evaluated_rhs)
-        boundary_resids = (self._evaluate_bcs_lower(basis_funcs, domain[0], params, problem) +
-                           self._evaluate_bcs_upper(basis_funcs, domain[1], params, problem))
+        boundary_resids = self._evaluate_boundary_resids(basis_funcs, domain, params, problem)
         collocation_resids = interior_resids + boundary_resids
 
         return np.hstack(collocation_resids)
