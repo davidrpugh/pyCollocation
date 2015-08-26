@@ -93,3 +93,13 @@ class TwoPointBVP(TwoPointBVPLike):
         self._number_odes = number_odes
         self._rhs = rhs
         self._rhs_jac = rhs_jac
+
+
+class IVP(TwoPointBVP):
+    """Represents an Initial Value Problem (IVP)."""
+
+    def __init__(self, bcs_lower, number_bcs_lower, number_odes,
+                 rhs, bcs_lower_jac=None, rhs_jac=None):
+        """Create an instance of the IVP class."""
+        super(IVP, self).__init__(bcs_lower, None, number_bcs_lower,
+                                  number_odes, rhs, bcs_lower_jac, None, rhs_jac)

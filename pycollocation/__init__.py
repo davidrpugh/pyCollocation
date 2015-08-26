@@ -2,8 +2,8 @@
 Objects imported here will live in the `pycollocation` namespace
 
 """
-__all__ = ["TwoPointBVP", "TwoPointBVPLike", "PolynomialSolver",
-           "Visualizer"]
+__all__ = ["IVP", "TwoPointBVP", "TwoPointBVPLike",
+           "PolynomialSolver", "Visualizer"]
 
 from . import polynomials
 from . import visualizers
