@@ -46,11 +46,11 @@ class SolverBase(object):
 
     def _construct_basis_derivatives(self, coefs, domain, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
-        return [self.basis_derivative_factory(coef, domain, **kwargs) for coef in coefs]
+        return [self.basis_derivatives_factory(coef, domain, **kwargs) for coef in coefs]
 
     def _construct_basis_functions(self, coefs, domain, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
-        return [self.basis_function_factory(coef, domain, **kwargs) for coef in coefs]
+        return [self.basis_functions_factory(coef, domain, **kwargs) for coef in coefs]
 
     def _evaluate_collocation_resids(self, coefs_array, domain, nodes, params, problem, kwargs):
         """Return collocation residuals associated with the current set of coefficients."""
@@ -67,7 +67,7 @@ class SolverBase(object):
 
         return np.hstack(collocation_resids)
 
-    def basis_derivative_factory(self, coef, domain, **kwargs):
+    def basis_derivatives_factory(self, coef, domain, **kwargs):
         raise NotImplementedError
 
     def basis_functions_factory(self, coef, domain, **kwargs):
