@@ -76,19 +76,22 @@ class SolverBase(object):
     def collocation_nodes(self, *args, **kwargs):
         raise NotImplementedError
 
+    def solution_functions_factory(self, domain, problem, result, **kwargs):
+        if result.success:
+            solution_coefs = self._array_to_list(result.x, problem.number_odes)
+            return self._construct_basis_functions(solution_coefs, domain, **kwargs)
+        else:
+            raise ValueError
+
     def solve(self, coefs_array, domain, nodes, params, problem,
               solver_options=None, **kwargs):
         """Solve a boundary value problem using orthogonal collocation."""
         if solver_options is None:
             solver_options = {}
 
+        # solving for solution coefficients is "just" a root-finding problem!
         result = optimize.root(self._evaluate_collocation_resids,
                                x0=coefs_array,
                                args=(domain, nodes, params, problem, kwargs),
                                **solver_options)
-
-        if result.success:
-            solution_coefs = self._array_to_list(result.x, problem.number_odes)
-            return self._construct_basis_functions(solution_coefs, domain, **kwargs)
-        else:
-            return result
+        return result
