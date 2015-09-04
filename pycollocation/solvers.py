@@ -14,11 +14,6 @@ class SolverBase(object):
         """Return a list of functions evaluated at given nodes."""
         return [f(xs) for f in functions]
 
-    @staticmethod
-    def _evaluate_interior_resids(left_hand_sides, right_hand_sides):
-        """Return a list of residuals evaluated at the interior nodes."""
-        return [lhs - rhs for lhs, rhs in zip(left_hand_sides, right_hand_sides)]
-
     @classmethod
     def _evaluate_bcs_lower(cls, basis_funcs, boundary, params, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_funcs, boundary)
@@ -41,6 +36,13 @@ class SolverBase(object):
         return boundary_resids
 
     @classmethod
+    def _evaluate_interior_resids(self, basis_derivs, basis_funcs, nodes, params, problem):
+        """Return a list of residuals evaluated at the interior nodes."""
+        evaluated_lhs = self._evaluate_functions(basis_derivs, nodes)
+        evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, params, problem)
+        return [lhs - rhs for lhs, rhs in zip(evaluated_lhs, evaluated_rhs)]
+
+    @classmethod
     def _evaluate_rhs(cls, basis_funcs, nodes, params, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_funcs, nodes)
         evaluated_rhs = problem.rhs(nodes, *evaluated_basis_funcs, **params)
@@ -54,16 +56,15 @@ class SolverBase(object):
         """Return a list of basis functions given a list of coefficients."""
         return [self.basis_funcs_factory(coef, domain, **kwargs) for coef in coefs]
 
-    def _evaluate_collocation_resids(self, coefs_array, domain, nodes, params, problem, kwargs):
-        """Return collocation residuals associated with the current set of coefficients."""
+    def _evaluate_collocation_resids(self, coefs_array, basis_kwargs, domain, nodes, params, problem):
+        """Return collocation residuals."""
+        # construct an approximation of the solution to the BVP
         coefs_list = self._array_to_list(coefs_array, problem.number_odes)
-        basis_derivs = self._construct_basis_derivs(coefs_list, domain, **kwargs)
-        basis_funcs = self._construct_basis_funcs(coefs_list, domain, **kwargs)
+        basis_derivs = self._construct_basis_derivs(coefs_list, domain, **basis_kwargs)
+        basis_funcs = self._construct_basis_funcs(coefs_list, domain, **basis_kwargs)
 
-        evaluated_lhs = self._evaluate_functions(basis_derivs, nodes)
-        evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, params, problem)
-
-        interior_resids = self._evaluate_interior_resids(evaluated_lhs, evaluated_rhs)
+        # assess the quality of the approximation
+        interior_resids = self._evaluate_interior_resids(basis_derivs, basis_funcs, nodes, params, problem)
         boundary_resids = self._evaluate_boundary_resids(basis_funcs, domain, params, problem)
         collocation_resids = np.hstack(interior_resids + boundary_resids)
 
@@ -78,10 +79,18 @@ class SolverBase(object):
     def collocation_nodes(self, *args, **kwargs):
         raise NotImplementedError
 
-    def solution_funcs_factory(self, domain, problem, result, **kwargs):
+    def solution_funcs_factory(self, basis_kwargs, domain, problem, result):
         if result.success:
-            solution_coefs = self._array_to_list(result.x, problem.number_odes)
-            return self._construct_basis_funcs(solution_coefs, domain, **kwargs)
+            soln_coefs = self._array_to_list(result.x, problem.number_odes)
+            return self._construct_basis_funcs(soln_coefs, domain, **basis_kwargs)
+        else:
+            raise ValueError
+
+    def solution_residuals(self, basis_kwargs, domain, nodes, params, problem, result):
+        if result.success:
+            args = (basis_kwargs, domain, nodes, params, problem)
+            residuals = self._evaluate_collocation_resids(result.x, *args)
+            return residuals
         else:
             raise ValueError
 
@@ -118,8 +127,9 @@ class SolverBase(object):
 
         """
         # solving for solution coefficients is "just" a root-finding problem!
+        args = (basis_kwargs, domain, nodes, params, problem)
         result = optimize.root(self._evaluate_collocation_resids,
                                x0=coefs_array,
-                               args=(domain, nodes, params, problem, basis_kwargs),
+                               args=args,
                                **solver_options)
         return result
