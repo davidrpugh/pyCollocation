@@ -37,7 +37,7 @@ class PolynomialSolver(solvers.SolverBase):
             raise ValueError(mesg.format(*cls._valid_kinds))
         return poly
 
-    def basis_derivatives_factory(self, coef, domain, kind):
+    def basis_derivs_factory(self, coef, domain, kind):
         """
         Given some coefficients, return a the derivative of a certain kind of
         orthogonal polynomial defined over a specific domain.
@@ -45,7 +45,7 @@ class PolynomialSolver(solvers.SolverBase):
         """
         return self._basis_polynomial_factory(coef, domain, kind, order=1)
 
-    def basis_functions_factory(self, coef, domain, kind):
+    def basis_funcs_factory(self, coef, domain, kind):
         """
         Given some coefficients, return a certain kind of orthogonal polynomial
         defined over a specific domain.
@@ -56,5 +56,5 @@ class PolynomialSolver(solvers.SolverBase):
     def collocation_nodes(self, degree, domain, kind):
         """Return optimal collocation nodes for some orthogonal polynomial."""
         basis_coefs = self._basis_polynomial_coefs(degree)
-        basis_poly = self.basis_functions_factory(basis_coefs, domain, kind)
+        basis_poly = self.basis_funcs_factory(basis_coefs, domain, kind)
         return basis_poly.roots()
