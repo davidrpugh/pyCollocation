@@ -63,6 +63,17 @@ class TwoPointBVPLike(object):
         return self._number_bcs_lower
 
     @property
+    def params(self):
+        r"""
+        Dictionary of model parameters.
+
+        :getter: Return the current dictionary of parameters.
+        :type: dict
+
+        """
+        return self._params
+
+    @property
     def rhs(self):
         r"""
         A function which calculates the value of the right-hand side of the
@@ -83,7 +94,8 @@ class TwoPointBVP(TwoPointBVPLike):
     """Represents a Two Point Boundary Value Problem (BVP)."""
 
     def __init__(self, bcs_lower, bcs_upper, number_bcs_lower, number_odes,
-                 rhs, bcs_lower_jac=None, bcs_upper_jac=None, rhs_jac=None):
+                 rhs, params=None, bcs_lower_jac=None, bcs_upper_jac=None,
+                 rhs_jac=None):
         """Create an instance of the TwoPointBVP class."""
         self._bcs_lower = bcs_lower
         self._bcs_lower_jac = bcs_lower_jac
@@ -91,6 +103,7 @@ class TwoPointBVP(TwoPointBVPLike):
         self._bcs_upper_jac = bcs_upper_jac
         self._number_bcs_lower = number_bcs_lower
         self._number_odes = number_odes
+        self._params = params
         self._rhs = rhs
         self._rhs_jac = rhs_jac
 
@@ -98,8 +111,9 @@ class TwoPointBVP(TwoPointBVPLike):
 class IVP(TwoPointBVP):
     """Represents an Initial Value Problem (IVP)."""
 
-    def __init__(self, bcs_lower, number_bcs_lower, number_odes,
-                 rhs, bcs_lower_jac=None, rhs_jac=None):
+    def __init__(self, bcs_lower, number_bcs_lower, number_odes, rhs,
+                 params=None, bcs_lower_jac=None, rhs_jac=None):
         """Create an instance of the IVP class."""
         super(IVP, self).__init__(bcs_lower, None, number_bcs_lower,
-                                  number_odes, rhs, bcs_lower_jac, None, rhs_jac)
+                                  number_odes, rhs, params, bcs_lower_jac,
+                                  None, rhs_jac)

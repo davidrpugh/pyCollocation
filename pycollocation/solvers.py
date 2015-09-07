@@ -1,7 +1,17 @@
+import collections
 import warnings
 
 import numpy as np
 from scipy import optimize
+
+
+ApproximateSolution = collections.namedtuple("ApproximateSolution",
+                                             field_names=["basis_kwargs",
+                                                          "basis_derivs",
+                                                          "basis_funcs",
+                                                          "domain",
+                                                          ],
+                                             )
 
 
 class SolverBase(object):
@@ -17,51 +27,52 @@ class SolverBase(object):
         return [f(xs) for f in functions]
 
     @classmethod
-    def _assess_approx_soln(cls, approx_soln, domain, nodes, params, problem):
-        interior_resids = cls._evaluate_interior_resids(approx_soln, nodes, params, problem)
-        boundary_resids = cls._evaluate_boundary_resids(approx_soln, domain, params, problem)
-        return np.hstack(interior_resids + boundary_resids)
+    def _assess_approx_soln(cls, approx_soln, nodes, problem):
+        interior_resids = cls._evaluate_interior_resids(approx_soln, nodes, problem)
+        boundary_resids = cls._evaluate_boundary_resids(approx_soln, problem)
+        resids = np.hstack(interior_resids + boundary_resids)
+        return resids
 
     @classmethod
     def _construct_approx_soln(cls, basis_kwargs, coefs_list, domain):
-        basis_derivs = cls._construct_basis_derivs(coefs_list, domain, **basis_kwargs)
-        basis_funcs = cls._construct_basis_funcs(coefs_list, domain, **basis_kwargs)
-        return basis_derivs, basis_funcs
+        derivs = cls._construct_basis_derivs(coefs_list, domain, **basis_kwargs)
+        funcs = cls._construct_basis_funcs(coefs_list, domain, **basis_kwargs)
+        return ApproximateSolution(basis_kwargs, derivs, funcs, domain)
 
     @classmethod
-    def _evaluate_bcs_lower(cls, basis_funcs, boundary, params, problem):
+    def _evaluate_bcs_lower(cls, basis_funcs, boundary, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_funcs, boundary)
-        return problem.bcs_lower(boundary, *evaluated_basis_funcs, **params)
+        return problem.bcs_lower(boundary, *evaluated_basis_funcs, **problem.params)
 
     @classmethod
-    def _evaluate_bcs_upper(cls, basis_funcs, boundary, params, problem):
+    def _evaluate_bcs_upper(cls, basis_funcs, boundary, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_funcs, boundary)
-        return problem.bcs_upper(boundary, *evaluated_basis_funcs, **params)
+        return problem.bcs_upper(boundary, *evaluated_basis_funcs, **problem.params)
 
     @classmethod
-    def _evaluate_boundary_resids(cls, approx_soln, domain, params, problem):
+    def _evaluate_boundary_resids(cls, approx_soln, problem):
         boundary_resids = []
-        _, basis_funcs = approx_soln
+        _, _, basis_funcs, domain = approx_soln
         if problem.bcs_lower is not None:
-            args = (basis_funcs, domain[0], params, problem)
+            args = (basis_funcs, domain[0], problem)
             boundary_resids.append(cls._evaluate_bcs_lower(*args))
         if problem.bcs_upper is not None:
-            args = (basis_funcs, domain[1], params, problem)
+            args = (basis_funcs, domain[1], problem)
             boundary_resids.append(cls._evaluate_bcs_upper(*args))
         return boundary_resids
 
     @classmethod
-    def _evaluate_interior_resids(self, approx_soln, nodes, params, problem):
+    def _evaluate_interior_resids(self, approx_soln, nodes, problem):
         """Return a list of residuals evaluated at the interior nodes."""
-        basis_derivs, basis_funcs = approx_soln
+        _, basis_derivs, basis_funcs, _ = approx_soln
         evaluated_lhs = self._evaluate_functions(basis_derivs, nodes)
-        evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, params, problem)
+        evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, problem)
         return [lhs - rhs for lhs, rhs in zip(evaluated_lhs, evaluated_rhs)]
 
     @classmethod
-    def _evaluate_rhs(cls, basis_funcs, nodes, params, problem):
+    def _evaluate_rhs(cls, basis_funcs, nodes, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_funcs, nodes)
-        evaluated_rhs = problem.rhs(nodes, *evaluated_basis_funcs, **params)
+        evaluated_rhs = problem.rhs(nodes, *evaluated_basis_funcs, **problem.params)
         return evaluated_rhs
 
     @classmethod
@@ -84,11 +95,11 @@ class SolverBase(object):
 
     @classmethod
     def _evaluate_collocation_resids(cls, coefs_array, basis_kwargs, domain,
-                                     nodes, params, problem):
+                                     nodes, problem):
         """Return collocation residuals."""
         coefs_list = cls._array_to_list(coefs_array, problem.number_odes)
         approx_soln = cls._construct_approx_soln(basis_kwargs, coefs_list, domain)
-        collocation_resids = cls._assess_approx_soln(approx_soln, domain, nodes, params, problem)
+        collocation_resids = cls._assess_approx_soln(approx_soln, nodes, problem)
         return collocation_resids
 
     @classmethod
@@ -113,7 +124,8 @@ class SolverBase(object):
         return residuals
 
     @classmethod
-    def solve(cls, basis_kwargs, coefs_array, domain, nodes, params, problem, **solver_options):
+    def solve(cls, basis_kwargs, coefs_array, domain, nodes, problem,
+              **solver_options):
         """
         Solve a boundary value problem using orthogonal collocation.
 
@@ -126,8 +138,6 @@ class SolverBase(object):
             condition.
         domain : array_like
         nodes : numpy.ndarray
-        params : dict
-            Dictionary of model parameters.
         problem : bvp.BVPLike
             Instance of a BVP problem to solve.
         solver_options : dict
@@ -144,14 +154,14 @@ class SolverBase(object):
         non-linear equations.
 
         """
-        values = (basis_kwargs, domain, nodes, params, problem)
+        values = (basis_kwargs, domain, nodes, problem)
         result = optimize.root(cls._evaluate_collocation_resids,
                                x0=coefs_array,
                                args=values,
                                **solver_options)
 
         # modify result object...
-        keys = ['basis_kwargs', 'domain', 'nodes', 'params', 'problem']
+        keys = ['basis_kwargs', 'domain', 'nodes', 'problem']
         attributes = {k: v for k, v in zip(keys, values)}
         result.update(attributes)
 
