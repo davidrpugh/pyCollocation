@@ -5,9 +5,9 @@ from scipy import optimize
 class SolverBase(object):
 
     @staticmethod
-    def _array_to_list(coefs_array, sections):
+    def _array_to_list(coefs_array, indices_or_sections, axis=0):
         """Splits an array into equal sections."""
-        return np.split(coefs_array, sections)
+        return np.split(coefs_array, indices_or_sections, axis)
 
     @staticmethod
     def _evaluate_functions(functions, xs):
