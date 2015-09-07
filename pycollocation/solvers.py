@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from scipy import optimize
 
@@ -15,6 +17,18 @@ class SolverBase(object):
         return [f(xs) for f in functions]
 
     @classmethod
+    def _assess_approx_soln(cls, approx_soln, domain, nodes, params, problem):
+        interior_resids = cls._evaluate_interior_resids(approx_soln, nodes, params, problem)
+        boundary_resids = cls._evaluate_boundary_resids(approx_soln, domain, params, problem)
+        return np.hstack(interior_resids + boundary_resids)
+
+    @classmethod
+    def _construct_approx_soln(cls, basis_kwargs, coefs_list, domain):
+        basis_derivs = cls._construct_basis_derivs(coefs_list, domain, **basis_kwargs)
+        basis_funcs = cls._construct_basis_funcs(coefs_list, domain, **basis_kwargs)
+        return basis_derivs, basis_funcs
+
+    @classmethod
     def _evaluate_bcs_lower(cls, basis_funcs, boundary, params, problem):
         evaluated_basis_funcs = cls._evaluate_functions(basis_funcs, boundary)
         return problem.bcs_lower(boundary, *evaluated_basis_funcs, **params)
@@ -25,8 +39,9 @@ class SolverBase(object):
         return problem.bcs_upper(boundary, *evaluated_basis_funcs, **params)
 
     @classmethod
-    def _evaluate_boundary_resids(cls, basis_funcs, domain, params, problem):
+    def _evaluate_boundary_resids(cls, approx_soln, domain, params, problem):
         boundary_resids = []
+        _, basis_funcs = approx_soln
         if problem.bcs_lower is not None:
             args = (basis_funcs, domain[0], params, problem)
             boundary_resids.append(cls._evaluate_bcs_lower(*args))
@@ -36,8 +51,9 @@ class SolverBase(object):
         return boundary_resids
 
     @classmethod
-    def _evaluate_interior_resids(self, basis_derivs, basis_funcs, nodes, params, problem):
+    def _evaluate_interior_resids(self, approx_soln, nodes, params, problem):
         """Return a list of residuals evaluated at the interior nodes."""
+        basis_derivs, basis_funcs = approx_soln
         evaluated_lhs = self._evaluate_functions(basis_derivs, nodes)
         evaluated_rhs = self._evaluate_rhs(basis_funcs, nodes, params, problem)
         return [lhs - rhs for lhs, rhs in zip(evaluated_lhs, evaluated_rhs)]
@@ -67,34 +83,34 @@ class SolverBase(object):
         raise NotImplementedError
 
     @classmethod
-    def _evaluate_collocation_resids(cls, coefs_array, basis_kwargs, domain, nodes, params, problem):
+    def _evaluate_collocation_resids(cls, coefs_array, basis_kwargs, domain,
+                                     nodes, params, problem):
         """Return collocation residuals."""
-        # construct an approximation of the solution to the BVP
         coefs_list = cls._array_to_list(coefs_array, problem.number_odes)
-        basis_derivs = cls._construct_basis_derivs(coefs_list, domain, **basis_kwargs)
-        basis_funcs = cls._construct_basis_funcs(coefs_list, domain, **basis_kwargs)
-
-        # assess the quality of the approximation
-        interior_resids = cls._evaluate_interior_resids(basis_derivs, basis_funcs, nodes, params, problem)
-        boundary_resids = cls._evaluate_boundary_resids(basis_funcs, domain, params, problem)
-        collocation_resids = np.hstack(interior_resids + boundary_resids)
-
+        approx_soln = cls._construct_approx_soln(basis_kwargs, coefs_list, domain)
+        collocation_resids = cls._assess_approx_soln(approx_soln, domain, nodes, params, problem)
         return collocation_resids
 
-    def solution_funcs_factory(self, basis_kwargs, domain, problem, result):
-        if result.success:
-            soln_coefs = self._array_to_list(result.x, problem.number_odes)
-            return self._construct_basis_funcs(soln_coefs, domain, **basis_kwargs)
-        else:
-            raise ValueError
+    @classmethod
+    def solution_funcs_factory(cls, result):
+        if not result.success:
+            mesg = ("Looks like the solver did not converge, interpret " +
+                    "resulting functions with caution!")
+            warnings.warn(mesg, RuntimeWarning)
+        soln_coefs = cls._array_to_list(result.x, result.problem.number_odes)
+        soln_funcs = cls._construct_basis_funcs(soln_coefs, result.domain, **result.basis_kwargs)
+        return soln_funcs
 
-    def solution_residuals(self, basis_kwargs, domain, nodes, params, problem, result):
-        if result.success:
-            args = (basis_kwargs, domain, nodes, params, problem)
-            residuals = self._evaluate_collocation_resids(result.x, *args)
-            return residuals
-        else:
-            raise ValueError
+    @classmethod
+    def solution_residuals(cls, points, result):
+        if not result.success:
+            mesg = ("Looks like the solver did not converge, interpret " +
+                    "residuals with caution!")
+            warnings.warn(mesg, RuntimeWarning)
+        args = (result.x, result.basis_kwargs, result.domain, points,
+                result.params, result.problem)
+        residuals = cls._evaluate_collocation_resids(*args)
+        return residuals
 
     @classmethod
     def solve(cls, basis_kwargs, coefs_array, domain, nodes, params, problem, **solver_options):
@@ -128,10 +144,15 @@ class SolverBase(object):
         non-linear equations.
 
         """
-        # solving for solution coefficients is "just" a root-finding problem!
-        args = (basis_kwargs, domain, nodes, params, problem)
+        values = (basis_kwargs, domain, nodes, params, problem)
         result = optimize.root(cls._evaluate_collocation_resids,
                                x0=coefs_array,
-                               args=args,
+                               args=values,
                                **solver_options)
+
+        # modify result object...
+        keys = ['basis_kwargs', 'domain', 'nodes', 'params', 'problem']
+        attributes = {k: v for k, v in zip(keys, values)}
+        result.update(attributes)
+
         return result
