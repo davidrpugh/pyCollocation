@@ -14,4 +14,17 @@ SolutionBase = collections.namedtuple("SolutionBase",
 
 
 class Solution(SolutionBase):
-    pass
+    """
+    Represents the solution to a Two-Point Boundary Value Problem (BVP).
+
+    Attributes
+    ----------
+    basis_kwargs : dict
+    domain : tuple
+    functions : list
+    nodes : ndarray
+    problem : TwoPointBVPLike
+    residuals : callable
+    result : OptimizeResult
+
+    """
