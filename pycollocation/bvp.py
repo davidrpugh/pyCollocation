@@ -60,8 +60,7 @@ class TwoPointBVP(TwoPointBVPBase):
 class IVP(TwoPointBVPBase):
 
     def __new__(cls, bcs_lower, number_bcs_lower, number_odes,
-                params, rhs, bcs_lower_jac=None, bcs_upper_jac=None,
-                rhs_jac=None):
+                params, rhs, bcs_lower_jac=None, rhs_jac=None):
         r"""
         Return a new instance of the IVP class.
 
