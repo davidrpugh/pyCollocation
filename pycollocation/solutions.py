@@ -15,7 +15,7 @@ SolutionBase = collections.namedtuple("SolutionBase",
 
 class Solution(SolutionBase):
     """
-    Represents the solution to a Two-Point Boundary Value Problem (BVP).
+    Class representing the solution to a Boundary Value Problem (BVP).
 
     Attributes
     ----------
@@ -28,3 +28,9 @@ class Solution(SolutionBase):
     result : OptimizeResult
 
     """
+
+    def normalized_residuals(self, points):
+        """Normalize residuals by the level of the variable."""
+        residuals = self.residuals(points)
+        variables = [soln_func(points) for soln_func in self.functions]
+        return [resid / variable for resid, variable in zip(residuals, variables)]
