@@ -1,36 +1,39 @@
 import collections
 
 
-SolutionBase = collections.namedtuple("SolutionBase",
+SolutionLike = collections.namedtuple("SolutionLike",
                                       field_names=['basis_kwargs',
-                                                   'domain',
                                                    'functions',
                                                    'nodes',
                                                    'problem',
-                                                   'residuals',
+                                                   'residual_function',
                                                    'result',
                                                    ],
                                       )
 
 
-class Solution(SolutionBase):
+class Solution(SolutionLike):
     """
     Class representing the solution to a Boundary Value Problem (BVP).
 
     Attributes
     ----------
     basis_kwargs : dict
-    domain : tuple
     functions : list
     nodes : ndarray
     problem : TwoPointBVPLike
-    residuals : callable
+    residual_function : callable
     result : OptimizeResult
 
     """
+    def evaluate_residual(self, points):
+        return self.residual_function(points)
 
-    def normalized_residuals(self, points):
+    def evaluate_solution(self, points):
+        return [f(points) for f in self.functions]
+
+    def normalize_residuals(self, points):
         """Normalize residuals by the level of the variable."""
-        residuals = self.residuals(points)
-        variables = [soln_func(points) for soln_func in self.functions]
-        return [resid / variable for resid, variable in zip(residuals, variables)]
+        residuals = self.evaluate_residual(points)
+        solutions = self.evaluate_solution(points)
+        return [resid / soln for resid, soln in zip(residuals, solutions)]

@@ -12,13 +12,12 @@ class SolverBase(object):
         return np.split(coefs_array, indices_or_sections, axis)
 
     @classmethod
-    def _approximate_soln(cls, basis_kwargs, coefs_list, domain):
+    def _approximate_soln(cls, basis_kwargs, coefs_list):
         """
         Parameters
         ----------
         basis_kwargs : dict(str: )
         coefs_list : list(numpy.ndarray)
-        domain : tuple
 
         Returns
         -------
@@ -26,18 +25,18 @@ class SolverBase(object):
         basis_funcs : list(function)
 
         """
-        basis_derivs = cls._construct_basis_derivs(coefs_list, domain, **basis_kwargs)
-        basis_funcs = cls._construct_basis_funcs(coefs_list, domain, **basis_kwargs)
+        basis_derivs = cls._construct_basis_derivs(coefs_list, **basis_kwargs)
+        basis_funcs = cls._construct_basis_funcs(coefs_list, **basis_kwargs)
         return basis_derivs, basis_funcs
 
     @classmethod
-    def _assess_approximate_soln(cls, basis_derivs, basis_funcs, domain, nodes, problem):
+    def _assess_approximate_soln(cls, basis_derivs, basis_funcs, basis_kwargs,
+                                 nodes, problem):
         """
         Parameters
         ----------
         basis_derivs : list(function)
         basis_funcs : list(function)
-        domain : tuple
         nodes : numpy.ndarray
         problem : TwoPointBVPLike
 
@@ -48,42 +47,34 @@ class SolverBase(object):
         """
         resid_func = cls._construct_residual_func(basis_derivs, basis_funcs, problem)
         interior_resids = resid_func(nodes)
-        boundary_resids = cls._compute_boundary_resids(basis_funcs, domain, problem)
+        boundary_resids = cls._compute_boundary_resids(basis_funcs, basis_kwargs, problem)
         resids = np.hstack(interior_resids + boundary_resids)
         return resids
 
     @classmethod
-    def _compute_bcs_lower(cls, basis_funcs, boundary, problem):
-        evald_basis_funcs = [func(boundary) for func in basis_funcs]
-        return problem.bcs_lower(boundary, *evald_basis_funcs, **problem.params)
-
-    @classmethod
-    def _compute_bcs_upper(cls, basis_funcs, boundary, problem):
-        evald_basis_funcs = [func(boundary) for func in basis_funcs]
-        return problem.bcs_upper(boundary, *evald_basis_funcs, **problem.params)
-
-    @classmethod
-    def _compute_boundary_resids(cls, basis_funcs, domain, problem):
+    def _compute_boundary_resids(cls, basis_funcs, basis_kwargs, problem):
         boundary_resids = []
         if problem.bcs_lower is not None:
-            args = (basis_funcs, domain[0], problem)
-            boundary_resids.append(cls._compute_bcs_lower(*args))
+            boundary_pt = basis_kwargs['domain'][0]
+            evald_basis_funcs = [func(boundary_pt) for func in basis_funcs]
+            evald_bcs_lower = problem.bcs_lower(boundary_pt, *evald_basis_funcs, **problem.params)
+            boundary_resids.append(evald_bcs_lower)
         if problem.bcs_upper is not None:
-            args = (basis_funcs, domain[1], problem)
-            boundary_resids.append(cls._compute_bcs_upper(*args))
+            boundary_pt = basis_kwargs['domain'][1]
+            evald_basis_funcs = [func(boundary_pt) for func in basis_funcs]
+            evald_bcs_upper = problem.bcs_upper(boundary_pt, *evald_basis_funcs, **problem.params)
+            boundary_resids.append(evald_bcs_upper)
         return boundary_resids
 
     @classmethod
-    def _compute_collocation_resids(cls, coefs_array, basis_kwargs, domain,
-                                    nodes, problem):
+    def _compute_collocation_resids(cls, coefs_array, basis_kwargs, nodes, problem):
         """Return collocation residuals."""
         coefs_list = cls._array_to_list(coefs_array, problem.number_odes)
         basis_derivs, basis_funcs = cls._approximate_soln(basis_kwargs,
-                                                          coefs_list,
-                                                          domain)
+                                                          coefs_list)
         collocation_resids = cls._assess_approximate_soln(basis_derivs,
                                                           basis_funcs,
-                                                          domain,
+                                                          basis_kwargs,
                                                           nodes,
                                                           problem)
         return collocation_resids
@@ -136,7 +127,6 @@ class SolverBase(object):
         Parameters
         ----------
         basis_kwargs : dict(str : )
-        domain : tuple
         nodes : numpy.ndarray
         problem : TwoPointBVPLike
         result : OptimizeResult
