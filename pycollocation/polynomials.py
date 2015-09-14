@@ -1,6 +1,6 @@
 """
-Classes for solving models using collocation with various polynomials as the
-underlying basis functions.
+Class for approximating the solution to two-point boundary value problems using
+either standard or orthogonal polynomials as basis functions.
 
 @author: davidrpugh
 
@@ -12,52 +12,41 @@ from . import solvers
 
 class PolynomialSolver(solvers.SolverBase):
 
-    _valid_kinds = ["Standard", "Chebyshev", "Hermite", "Laguerre", "Legendre"]
-
     @staticmethod
-    def _basis_polynomial_coefs(degree):
-        """Return coefficients for a basis polynomial of a given degree."""
+    def _basis_monomial_coefs(degree):
+        """Return coefficients for a monomial of a given degree."""
         return np.append(np.zeros(degree), 1)
 
     @classmethod
-    def _basis_polynomial_factory(cls, coef, domain, kind, order):
+    def _basis_polynomial_factory(cls, coef, domain, kind, deriv):
         """Return a polynomial given some coefficients."""
-        if kind == "Standard":
-            poly = np.polynomial.Polynomial(coef, domain).deriv(order)
-        elif kind == "Chebyshev":
-            poly = np.polynomial.Chebyshev(coef, domain).deriv(order)
-        elif kind == "Hermite":
-            poly = np.polynomial.Hermite(coef, domain).deriv(order)
-        elif kind == "Laguerre":
-            poly = np.polynomial.Laguerre(coef, domain).deriv(order)
-        elif kind == "Legendre":
-            poly = np.polynomial.Legendre(coef, domain).deriv(order)
+        basis_polynomial = getattr(np.polynomial, kind)
+        if not deriv:
+            return basis_polynomial(coef, domain)
         else:
-            mesg = "Parameter 'kind' must be one of {}, {}, {}, or {}."
-            raise ValueError(mesg.format(*cls._valid_kinds))
-        return poly
+            return basis_polynomial(coef, domain).deriv()
 
     @classmethod
-    def basis_derivs_factory(cls, coef, domain, kind):
+    def basis_derivs_factory(cls, coef, domain, kind, **kwargs):
         """
         Given some coefficients, return a the derivative of a certain kind of
         orthogonal polynomial defined over a specific domain.
 
         """
-        return cls._basis_polynomial_factory(coef, domain, kind, order=1)
+        return cls._basis_polynomial_factory(coef, domain, kind, True)
 
     @classmethod
-    def basis_funcs_factory(cls, coef, domain, kind):
+    def basis_funcs_factory(cls, coef, domain, kind, **kwargs):
         """
         Given some coefficients, return a certain kind of orthogonal polynomial
         defined over a specific domain.
 
         """
-        return cls._basis_polynomial_factory(coef, domain, kind, order=0)
+        return cls._basis_polynomial_factory(coef, domain, kind, False)
 
     @classmethod
     def collocation_nodes(cls, degree, domain, kind):
         """Return optimal collocation nodes for some orthogonal polynomial."""
-        basis_coefs = cls._basis_polynomial_coefs(degree)
+        basis_coefs = cls._basis_monomial_coefs(degree)
         basis_poly = cls.basis_funcs_factory(basis_coefs, domain, kind)
         return basis_poly.roots()
