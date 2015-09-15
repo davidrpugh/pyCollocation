@@ -1,10 +1,23 @@
+import collections
+
 import numpy as np
 from scipy import optimize
 
 from . import solutions
 
 
-class SolverBase(object):
+SolutionLike = collections.namedtuple("SolutionLike",
+                                      field_names=['basis_kwargs',
+                                                   'functions',
+                                                   'nodes',
+                                                   'problem',
+                                                   'residual_function',
+                                                   'result',
+                                                   ],
+                                      )
+
+
+class SolverLike(object):
 
     @staticmethod
     def _array_to_list(coefs_array, indices_or_sections, axis=0):

@@ -7,10 +7,10 @@ either standard or orthogonal polynomials as basis functions.
 """
 import numpy as np
 
-from . import solvers
+from . import bases
 
 
-class PolynomialSolver(solvers.SolverBase):
+class PolynomialSolver(bases.SolverLike):
 
     @staticmethod
     def _basis_monomial_coefs(degree):
