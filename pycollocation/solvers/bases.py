@@ -1,20 +1,7 @@
-import collections
-
 import numpy as np
 from scipy import optimize
 
 from . import solutions
-
-
-SolutionLike = collections.namedtuple("SolutionLike",
-                                      field_names=['basis_kwargs',
-                                                   'functions',
-                                                   'nodes',
-                                                   'problem',
-                                                   'residual_function',
-                                                   'result',
-                                                   ],
-                                      )
 
 
 class SolverLike(object):

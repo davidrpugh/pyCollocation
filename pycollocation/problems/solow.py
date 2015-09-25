@@ -19,11 +19,9 @@ class IVP(bvp.IVP):
 
     """
 
-    def __new__(cls, f, mpk, params):
+    def __new__(cls, f, params):
         rhs = cls._rhs_factory(f)
-        rhs_jac = cls._rhs_jac_factory(mpk)
-        return super(IVP, cls).__new__(cls, cls._bcs_lower, 1, 1, params, rhs,
-                                       cls._bcs_lower_jac, rhs_jac)
+        return super(IVP, cls).__new__(cls, cls._bcs_lower, 1, 1, params, rhs)
 
     def __repr__():
         pass
@@ -36,24 +34,12 @@ class IVP(bvp.IVP):
         return [k - k0]
 
     @staticmethod
-    def _bcs_lower_jac(t, k, k0, **params):
-        return [[1.0]]
-
-    @staticmethod
     def _solow_model(t, k, f, delta, g, n, s, **params):
         return [s * f(k, **params) - (g + n + delta) * k]
-
-    @staticmethod
-    def _solow_model_jac(t, k, mpk, delta, g, n, s, **params):
-        return [[s * mpk(k, **params) - (g + n + delta)]]
 
     @classmethod
     def _rhs_factory(cls, f):
         return functools.partial(cls._solow_model, f=f)
-
-    @classmethod
-    def _rhs_jac_factory(cls, mpk):
-        return functools.partial(cls._solow_model_jac, mpk=mpk)
 
 
 class InitialPoly(object):

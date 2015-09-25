@@ -15,11 +15,6 @@ class SolowTestCase(unittest.TestCase):
         return (s / (g + n + delta))**(1 / (1 - alpha))
 
     @staticmethod
-    def cobb_douglas_mpk(k, alpha, **params):
-        y = SolowTestCase.cobb_douglas_output(k, alpha)
-        return alpha * (y / k)
-
-    @staticmethod
     def cobb_douglas_output(k, alpha, **params):
         return k**alpha
 
@@ -44,7 +39,6 @@ class SolowTestCase(unittest.TestCase):
     def setUp(self):
         """Set up a Solow model to solve."""
         self.ivp = solow.IVP(self.cobb_douglas_output,
-                             self.cobb_douglas_mpk,
                              self.cobb_douglas_params(),
                              )
 

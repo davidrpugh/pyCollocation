@@ -1,7 +1,18 @@
-from . import bases
+import collections
 
 
-class Solution(bases.SolutionLike):
+SolutionLike = collections.namedtuple("SolutionLike",
+                                      field_names=['basis_kwargs',
+                                                   'functions',
+                                                   'nodes',
+                                                   'problem',
+                                                   'residual_function',
+                                                   'result',
+                                                   ],
+                                      )
+
+
+class Solution(SolutionLike):
     """
     Class representing the solution to a Boundary Value Problem (BVP).
 
