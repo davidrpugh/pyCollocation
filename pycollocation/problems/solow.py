@@ -2,10 +2,10 @@ import functools
 
 import numpy as np
 
-from . import bvp
+from . import ivp
 
 
-class IVP(bvp.IVP):
+class IVP(ivp.IVP):
     """
     Class representing a generic Solow growth model.
 
@@ -16,22 +16,20 @@ class IVP(bvp.IVP):
     mpk : function
         Marginal product of capital (per unit effective labor supply).
     params : dict(str: float)
+        Dictionary of model parameters.
 
     """
 
-    def __new__(cls, f, params):
-        rhs = cls._rhs_factory(f)
-        return super(IVP, cls).__new__(cls, cls._bcs_lower, 1, 1, params, rhs)
+    def __init__(self, f, params):
+        bcs_lower = lambda t, k, k0, **params: [k - k0]
+        rhs = self._rhs_factory(f)
+        super(IVP, self).__init__(bcs_lower, 1, 1, params, rhs)
 
     def __repr__():
         pass
 
     def __str__():
         pass
-
-    @staticmethod
-    def _bcs_lower(t, k, k0, **params):
-        return [k - k0]
 
     @staticmethod
     def _solow_model(t, k, f, delta, g, n, s, **params):

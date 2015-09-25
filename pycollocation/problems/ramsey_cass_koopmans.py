@@ -34,10 +34,8 @@ class TwoPointBVP(bvp.TwoPointBVP):
     def __new__(cls, A, A_prime, c_star, f, k_star, mpk, mpk_prime, params):
         bcs_upper = cls._bcs_upper_factory(c_star)
         rhs = cls._rhs_factory(A, A_prime, f, mpk, mpk_prime)
-        rhs_jac = cls._rhs_jac_factory(A, A_prime, mpk, mpk_prime)
         return super(TwoPointBVP, cls).__new__(cls, cls._bcs_lower, bcs_upper,
-                                               cls._bcs_upper_jac, 1, 1, params,
-                                               rhs, cls._bcs_lower_jac, rhs_jac)
+                                               1, 2, rhs, params)
 
     def __repr__():
         pass
@@ -58,20 +56,12 @@ class TwoPointBVP(bvp.TwoPointBVP):
         return [k - k0]
 
     @staticmethod
-    def _bcs_lower_jac(t, k, c, k0, **params):
-        return [[1.0, 0.0]]
-
-    @staticmethod
     def _c_star_residual(t, k, c, c_star, **params):
         return [c - c_star(**params)]
 
     @staticmethod
     def _bcs_upper_factory(c_star):
         return functools.partial(TwoPointBVP._c_star_residual, c_star=c_star)
-
-    @staticmethod
-    def _bcs_upper_jac(t, k, c, **params):
-        return [[0.0, 1.0]]
 
     @staticmethod
     def _c_dot(t, k, c, A, mpk, delta, rho, **params):
@@ -91,23 +81,9 @@ class TwoPointBVP(bvp.TwoPointBVP):
         return out
 
     @staticmethod
-    def _ramsey_model_jac(t, k, c, A, A_prime, mpk, mpk_prime, delta, g, n, rho, **params):
-        jac = [[mpk(k, **params) - (g + n + delta), -1],
-               [mpk_prime(k, **params) / A(c, **params), -(mpk(k, **params) - delta - rho) * (A_prime(c, **params) / A(c, **params)**2)]]
-        return jac
-
-    @staticmethod
-    def _rhs_factory(A, A_prime, f, mpk, mpk_prime):
-        rhs = functools.partial(TwoPointBVP._ramsey_model, A=A, A_prime=A_prime,
-                                f=f, mpk=mpk, mpk_prime=mpk_prime)
+    def _rhs_factory(A, f, mpk):
+        rhs = functools.partial(TwoPointBVP._ramsey_model, A=A, f=f, mpk=mpk)
         return rhs
-
-    @staticmethod
-    def _rhs_jac_factory(A, A_prime, mpk, mpk_prime):
-        rhs_jac = functools.partial(TwoPointBVP._ramsey_model_jac, A=A,
-                                    A_prime=A_prime, mpk=mpk,
-                                    mpk_prime=mpk_prime)
-        return rhs_jac
 
 
 class InitialPoly(object):
