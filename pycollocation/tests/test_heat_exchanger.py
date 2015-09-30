@@ -38,7 +38,7 @@ class HeatExchanger(unittest.TestCase):
         return T1_poly, T2_poly
 
     @staticmethod
-    def rhs(cls, A, T1, T2, U, **params):
+    def rhs(A, T1, T2, U, **params):
         return [-(T1 - T2) * U, -0.5 * (T1 - T2) * U]
 
     def setUp(self):
