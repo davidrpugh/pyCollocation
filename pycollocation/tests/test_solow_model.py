@@ -3,50 +3,70 @@ import unittest
 import numpy as np
 from scipy import stats
 
-from .. problems import solow
+from .. problems import ivp
 from .. import solvers
 
 
-class SolowTestCase(unittest.TestCase):
+class SolowModel(unittest.TestCase):
 
     @staticmethod
-    def cobb_douglas_equilibrium_capital(g, n, s, alpha, delta, **params):
-        """Steady state value for capital stock (per unit effective labor)."""
-        return (s / (g + n + delta))**(1 / (1 - alpha))
-
-    @staticmethod
-    def cobb_douglas_output(k, alpha, **params):
-        return k**alpha
-
-    @staticmethod
-    def cobb_douglas_params():
-        g, n = stats.norm.rvs(size=2)
-        delta, = stats.lognorm.rvs(1.0, -(g + n), 1.0, size=1)
-        s, alpha = stats.uniform.rvs(size=2)
-        k0, = stats.lognorm.rvs(1.0, size=1)
-        params = {'g': g, 'n': n, 'delta': delta, 's': s, 'alpha': alpha,
-                  'k0': k0}
-        return params
-
-    @staticmethod
-    def cobb_douglas_solution(t, k0, g, n, s, alpha, delta, **params):
+    def analytic_solution(t, k0, g, n, s, alpha, delta, **params):
         """Analytic solution for model with Cobb-Douglas production."""
         lmbda = (g + n + delta) * (1 - alpha)
         ks = (((s / (g + n + delta)) * (1 - np.exp(-lmbda * t)) +
                k0**(1 - alpha) * np.exp(-lmbda * t))**(1 / (1 - alpha)))
         return ks
 
+    @staticmethod
+    def bcs_lower(t, k, k0, **params):
+        return [k - k0]
+
+    @staticmethod
+    def cobb_douglas_output(k, alpha, **params):
+        """Cobb-Douglas output (per unit effective labor supply)."""
+        return k**alpha
+
+    @staticmethod
+    def equilibrium_capital(g, n, s, alpha, delta, **params):
+        """Steady state value for capital (per unit effective labor supply)."""
+        return (s / (g + n + delta))**(1 / (1 - alpha))
+
+    @staticmethod
+    def random_params():
+        g, n = stats.norm.rvs(0.05, 0.1, size=2)
+        delta, = stats.lognorm.rvs(1.0, -(g + n), 1.0, size=1)
+        s, alpha = stats.uniform.rvs(size=2)
+        k0, = stats.lognorm.rvs(1.0, size=1)
+        params = {'g': g, 'n': n, 'delta': delta, 's': s, 'alpha': alpha, 'k0': k0}
+        return params
+
+    @classmethod
+    def create_mesh(cls, basis_kwargs, num, problem):
+        ts = np.linspace(*basis_kwargs['domain'], num=num)
+        kstar = cls.equilibrium_capital(**problem.params)
+        ks = kstar - (kstar - problem.params['k0']) * np.exp(-ts)
+        return ts, ks
+
+    @classmethod
+    def fit_initial_poly(cls, basis_kwargs, num, problem):
+        ts, ks = cls.create_mesh(basis_kwargs, num, problem)
+        basis_poly = getattr(np.polynomial, basis_kwargs['kind'])
+        return basis_poly.fit(ts, ks, basis_kwargs['degree'], basis_kwargs['domain'])
+
+    @classmethod
+    def rhs(cls, t, k, delta, g, n, s, **params):
+        """Equation of motion for capital (per unit effective labor supply)."""
+        return [s * cls.cobb_douglas_output(k, **params) - (g + n + delta) * k]
+
     def setUp(self):
         """Set up a Solow model to solve."""
-        self.ivp = solow.IVP(self.cobb_douglas_output,
-                             self.cobb_douglas_params(),
-                             )
+        self.ivp = ivp.IVP(self.bcs_lower, 1, 1, self.random_params(), self.rhs)
 
     def _test_polynomial_collocation(self, basis_kwargs):
         """Test collocation solver using Chebyshev polynomials for basis."""
         nodes = solvers.PolynomialSolver.collocation_nodes(**basis_kwargs)
-        initial_poly = solow.InitialPoly(self.cobb_douglas_equilibrium_capital)
-        initial_coefs = initial_poly.fit(basis_kwargs, 1000, self.ivp).coef
+        initial_poly = self.fit_initial_poly(basis_kwargs, 1000, self.ivp)
+        initial_coefs = initial_poly.coef
 
         solution = solvers.PolynomialSolver.solve(basis_kwargs,
                                                   initial_coefs,
@@ -57,7 +77,7 @@ class SolowTestCase(unittest.TestCase):
         self.assertTrue(solution.result.success, msg="Solver failed!")
 
         # compute the residuals
-        ts, _ = initial_poly.create_mesh(basis_kwargs, 1000, self.ivp)
+        ts, _ = self.create_mesh(basis_kwargs, 1000, self.ivp)
         normed_residuals = solution.normalize_residuals(ts)
 
         # check that residuals are close to zero on average
@@ -67,7 +87,7 @@ class SolowTestCase(unittest.TestCase):
 
         # check that the numerical and analytic solutions are close
         numeric_soln = solution.evaluate_solution(ts)
-        analytic_soln = self.cobb_douglas_solution(ts, **self.ivp.params)
+        analytic_soln = self.analytic_solution(ts, **self.ivp.params)
         self.assertTrue(np.mean(numeric_soln - analytic_soln) < 1e-6)
 
     def test_chebyshev_collocation(self):
