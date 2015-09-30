@@ -7,6 +7,11 @@ from .. import solvers
 
 
 class HeatExchanger(unittest.TestCase):
+    """
+    Simple test problem borrow from scikits.bvp_solver.  Useful primarily to
+    show that collocation with standard polynomials works, but is not very robust.
+
+    """
 
     @staticmethod
     def bcs_lower(A, T1, T2, T10, **params):
@@ -15,10 +20,6 @@ class HeatExchanger(unittest.TestCase):
     @staticmethod
     def bcs_upper(A, T1, T2, T2Ahx, **params):
         return [T2 - T2Ahx]
-
-    @staticmethod
-    def q(A, T1, T2, U):
-        return (T1 - T2) * U
 
     @classmethod
     def create_mesh(cls, basis_kwargs, num, problem):
@@ -36,9 +37,9 @@ class HeatExchanger(unittest.TestCase):
                                  basis_kwargs['domain'])
         return T1_poly, T2_poly
 
-    @classmethod
+    @staticmethod
     def rhs(cls, A, T1, T2, U, **params):
-        return [-cls.q(A, T1, T2, U), -0.5 * cls.q(A, T1, T2, U)]
+        return [-(T1 - T2) * U, -0.5 * (T1 - T2) * U]
 
     def setUp(self):
         """Set up a Solow model to solve."""
@@ -69,16 +70,6 @@ class HeatExchanger(unittest.TestCase):
         mesg = "Normed residuals:\n{}\n\nDictionary of model params: {}"
         self.assertTrue(np.mean(normed_residuals) < 1e-6,
                         msg=mesg.format(normed_residuals, self.bvp.params))
-
-    def test_chebyshev_collocation(self):
-        """Test collocation solver using Chebyshev polynomials for basis."""
-        basis_kwargs = {'kind': 'Chebyshev', 'degree': 15, 'domain': (0, 5)}
-        self._test_polynomial_collocation(basis_kwargs)
-
-    def test_legendre_collocation(self):
-        """Test collocation solver using Legendre polynomials for basis."""
-        basis_kwargs = {'kind': 'Legendre', 'degree': 15, 'domain': (0, 5)}
-        self._test_polynomial_collocation(basis_kwargs)
 
     def test_standard_collocation(self):
         """Test collocation solver using Standard polynomials for basis."""
