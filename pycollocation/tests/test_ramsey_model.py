@@ -8,6 +8,15 @@ from .. import solvers
 
 
 class RamseyModel(unittest.TestCase):
+    """
+    Test case using the Ramsey-Cass-Koopmans model of optimal savings.
+
+    Model assumes Cobb-Douglas production technology and Constant Relative Risk
+    Aversion (CRRA) preferences.  I then generate random parameter values
+    consistent with a constant consumption-output ratio (i.e., constant savings
+    rate).
+
+    """
 
     @staticmethod
     def bcs_lower(t, k, c, k0, **params):
@@ -39,15 +48,31 @@ class RamseyModel(unittest.TestCase):
         """Marginal product of capital with Cobb-Douglas production."""
         return alpha * k**(alpha - 1)
 
-    @staticmethod
-    def random_params():
-        g, n = stats.norm.rvs(0.05, 0.1, size=2)
-        delta, theta = stats.lognorm.rvs(1.0, -(g + n), 1.0, size=2)
-        alpha, = stats.uniform.rvs(size=1)
-        k0, = stats.lognorm.rvs(1.0, size=1)
+    @classmethod
+    def random_params(cls, sigma):
+        # random g, n, delta such that sum of these params is positive
+        g, n = stats.norm.rvs(0.05, sigma, size=2)
+        delta, = stats.lognorm.rvs(sigma, loc=g + n, size=1)
+        assert g + n + delta > 0
+
+        # choose alpha consistent with theta > 1
+        alpha, = stats.uniform.rvs(scale=(g + delta) / (g + n + delta), size=1)
+        assert alpha < (delta + g) / (g + n + delta)
+
+        lower_bound = delta / (alpha * (g + n + delta) - g)
+        theta, = stats.lognorm.rvs(sigma, loc=lower_bound, size=1)
         rho = alpha * theta * (g + n + delta) - (delta * theta * g)
+        print theta, lower_bound
+        assert rho > 0
+
+        # choose k0 so that it is not too far from equilibrium
+        kstar = cls.equilibrium_capital(g, n, alpha, delta, rho, theta)
+        k0, = stats.uniform.rvs(0.5 * kstar, 1.5 * kstar, size=1)
+        assert k0 > 0
+
         params = {'g': g, 'n': n, 'delta': delta, 'rho': rho, 'alpha': alpha,
                   'theta': theta, 'k0': k0}
+
         return params
 
     @classmethod
@@ -83,7 +108,7 @@ class RamseyModel(unittest.TestCase):
         return ts, ks, cs
 
     @classmethod
-    def fit_initial_poly(cls, basis_kwargs, num, problem):
+    def fit_initial_polys(cls, basis_kwargs, num, problem):
         ts, ks, cs = cls.create_mesh(basis_kwargs, num, problem)
         basis_poly = getattr(np.polynomial, basis_kwargs['kind'])
         capital_poly = basis_poly.fit(ts, ks, basis_kwargs['degree'],
@@ -93,21 +118,31 @@ class RamseyModel(unittest.TestCase):
         return capital_poly, consumption_poly
 
     @classmethod
-    def rhs(cls, t, k, c, delta, g, n, **params):
+    def _c_dot(cls, t, k, c, g, delta, rho, theta, **params):
+        out = ((cls.cobb_douglas_mpk(k, **params) - delta - rho - theta * g) /
+               cls.pratt_arrow_risk_aversion(c, theta, **params))
+        return out
+
+    @classmethod
+    def _k_dot(cls, t, k, c, g, n, delta, **params):
+        return cls.cobb_douglas_output(k, **params) - c - (g + n + delta) * k
+
+    @classmethod
+    def rhs(cls, t, k, c, delta, g, n, rho, theta, **params):
         """Equation of motion for capital (per unit effective labor supply)."""
-        out = [cls.cobb_douglas_output(k, **params) - c - (g + n + delta) * k,
-               cls.cobb_douglas_mpk(k, **params) / cls.pratt_arrow_risk_aversion(c, **params)]
+        out = [cls._k_dot(t, k, c, g, n, delta, **params),
+               cls._c_dot(t, k, c, g, delta, rho, theta, **params)]
         return out
 
     def setUp(self):
         """Set up a Solow model to solve."""
         self.bvp = bvp.TwoPointBVP(self.bcs_lower, self.bcs_upper, 1, 2,
-                                   self.random_params(), self.rhs)
+                                   self.random_params(0.1), self.rhs)
 
     def _test_polynomial_collocation(self, basis_kwargs):
         """Test collocation solver using Chebyshev polynomials for basis."""
         nodes = solvers.PolynomialSolver.collocation_nodes(**basis_kwargs)
-        initial_polys = self.fit_initial_poly(basis_kwargs, 1000, self.bvp)
+        initial_polys = self.fit_initial_polys(basis_kwargs, 1000, self.bvp)
         capital_poly, consumption_poly = initial_polys
         initial_coefs = np.hstack([capital_poly.coef, consumption_poly.coef])
 
@@ -145,9 +180,4 @@ class RamseyModel(unittest.TestCase):
     def test_legendre_collocation(self):
         """Test collocation solver using Legendre polynomials for basis."""
         basis_kwargs = {'kind': 'Legendre', 'degree': 50, 'domain': (0, 100)}
-        self._test_polynomial_collocation(basis_kwargs)
-
-    def test_standard_collocation(self):
-        """Test collocation solver using Standard polynomials for basis."""
-        basis_kwargs = {'kind': 'Polynomial', 'degree': 50, 'domain': (0, 100)}
         self._test_polynomial_collocation(basis_kwargs)

@@ -31,13 +31,24 @@ class SolowModel(unittest.TestCase):
         """Steady state value for capital (per unit effective labor supply)."""
         return (s / (g + n + delta))**(1 / (1 - alpha))
 
-    @staticmethod
-    def random_params():
-        g, n = stats.norm.rvs(0.05, 0.1, size=2)
-        delta, = stats.lognorm.rvs(1.0, -(g + n), 1.0, size=1)
-        s, alpha = stats.uniform.rvs(size=2)
-        k0, = stats.lognorm.rvs(1.0, size=1)
-        params = {'g': g, 'n': n, 'delta': delta, 's': s, 'alpha': alpha, 'k0': k0}
+    @classmethod
+    def random_params(cls, sigma):
+        # random g, n, delta such that sum of these params is positive
+        g, n = stats.norm.rvs(0.05, sigma, size=2)
+        delta, = stats.lognorm.rvs(sigma, loc=g + n, size=1)
+        assert g + n + delta > 0
+
+        # s and alpha can be arbitrary on (0, 1)
+        s, alpha = stats.beta.rvs(a=1, b=3, size=2)
+
+        # choose k0 so that it is not too far from equilibrium
+        kstar = cls.equilibrium_capital(g, n, s, alpha, delta)
+        k0, = stats.uniform.rvs(0.5 * kstar, 1.5 * kstar, size=1)
+        assert k0 > 0
+
+        params = {'g': g, 'n': n, 'delta': delta, 's': s, 'alpha': alpha,
+                  'k0': k0}
+
         return params
 
     @classmethod
@@ -60,7 +71,7 @@ class SolowModel(unittest.TestCase):
 
     def setUp(self):
         """Set up a Solow model to solve."""
-        self.ivp = ivp.IVP(self.bcs_lower, 1, 1, self.random_params(), self.rhs)
+        self.ivp = ivp.IVP(self.bcs_lower, 1, 1, self.random_params(0.1), self.rhs)
 
     def _test_polynomial_collocation(self, basis_kwargs):
         """Test collocation solver using Chebyshev polynomials for basis."""
@@ -98,9 +109,4 @@ class SolowModel(unittest.TestCase):
     def test_legendre_collocation(self):
         """Test collocation solver using Legendre polynomials for basis."""
         basis_kwargs = {'kind': 'Legendre', 'degree': 50, 'domain': (0, 100)}
-        self._test_polynomial_collocation(basis_kwargs)
-
-    def test_standard_collocation(self):
-        """Test collocation solver using Standard polynomials for basis."""
-        basis_kwargs = {'kind': 'Polynomial', 'degree': 50, 'domain': (0, 100)}
         self._test_polynomial_collocation(basis_kwargs)
