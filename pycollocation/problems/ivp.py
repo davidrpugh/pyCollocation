@@ -1,5 +1,5 @@
 """
-Classes for representing boundary value problems.
+Classes for modeling initial value problems.
 
 @author : David R. Pugh
 
