@@ -12,6 +12,8 @@ from . import bases
 
 class PolynomialSolver(bases.SolverLike):
 
+    _valid_kinds = ['Polynomial', 'Chebyshev', 'Legendre', 'Laguerre', 'Hermite']
+
     @staticmethod
     def _basis_monomial_coefs(degree):
         """Return coefficients for a monomial of a given degree."""
@@ -20,11 +22,21 @@ class PolynomialSolver(bases.SolverLike):
     @classmethod
     def _basis_polynomial_factory(cls, coef, domain, kind, deriv):
         """Return a polynomial given some coefficients."""
-        basis_polynomial = getattr(np.polynomial, kind)
+        valid_kind = cls._validate(kind)
+        basis_polynomial = getattr(np.polynomial, valid_kind)
         if not deriv:
             return basis_polynomial(coef, domain)
         else:
             return basis_polynomial(coef, domain).deriv()
+
+    @classmethod
+    def _validate(cls, kind):
+        """Validate the kind argument."""
+        if kind not in cls._valid_kinds:
+            mesg = "'kind' must be one of {}, {}, {}, or {}."
+            raise ValueError(mesg.format(*cls._valid_kinds))
+        else:
+            return kind
 
     @classmethod
     def basis_derivs_factory(cls, coef, domain, kind, **kwargs):
