@@ -1,31 +1,62 @@
-import collections
+"""
+Classes for representing solutions to boundary value problems.
+
+@author : davidrpugh
+
+"""
 
 
-SolutionLike = collections.namedtuple("SolutionLike",
-                                      field_names=['basis_kwargs',
-                                                   'functions',
-                                                   'nodes',
-                                                   'problem',
-                                                   'residual_function',
-                                                   'result',
-                                                   ],
-                                      )
+class SolutionLike(object):
+
+    @property
+    def basis_kwargs(self):
+        return self._basis_kwargs
+
+    @property
+    def functions(self):
+        return self._functions
+
+    @property
+    def nodes(self):
+        return self._nodes
+
+    @property
+    def problem(self):
+        return self._problem
+
+    @property
+    def residual_function(self):
+        return self._residual_function
+
+    @property
+    def result(self):
+        return self._result
 
 
 class Solution(SolutionLike):
-    """
-    Class representing the solution to a Boundary Value Problem (BVP).
+    """Class representing the solution to a Boundary Value Problem (BVP)."""
 
-    Attributes
-    ----------
-    basis_kwargs : dict
-    functions : list
-    nodes : ndarray
-    problem : TwoPointBVPLike
-    residual_function : callable
-    result : OptimizeResult
+    def __init__(self, basis_kwargs, functions, nodes, problem, residual_function, result):
+        """
+        Initialize an instance of the Solution class.
 
-    """
+        Parameters
+        ----------
+        basis_kwargs : dict
+        functions : list
+        nodes : numpy.ndarray
+        problem : TwoPointBVPLike
+        residual_function : callable
+        result : OptimizeResult
+
+        """
+        self._basis_kwargs = basis_kwargs
+        self._functions = functions
+        self._nodes = nodes
+        self._problem = problem
+        self._residual_function = residual_function
+        self._result = result
+
     def evaluate_residual(self, points):
         return self.residual_function(points)
 
