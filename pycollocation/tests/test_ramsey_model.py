@@ -1,182 +1,149 @@
-import unittest
+"""
+Test case using the Ramsey-Cass-Koopmans model of optimal savings.
+
+Model assumes Cobb-Douglas production technology and Constant Relative Risk
+Aversion (CRRA) preferences.  I then generate random parameter values
+consistent with a constant consumption-output ratio (i.e., constant savings
+rate).
+
+"""
+from nose import tools
 
 import numpy as np
 from scipy import stats
 
+from . import models
 from .. import basis_functions
-from .. problems import bvp
 from .. import solvers
 
 
-class RamseyModel(unittest.TestCase):
-    """
-    Test case using the Ramsey-Cass-Koopmans model of optimal savings.
+def analytic_solution(t, k0, g, n, alpha, delta, theta, **params):
+    """Analytic solution for model with Cobb-Douglas production."""
+    lmbda = (g + n + delta) * (1 - alpha)
+    ks = ((k0**(1 - alpha) * np.exp(-lmbda * t) +
+          (1 / (theta * (g + n + delta))) * (1 - np.exp(-lmbda * t)))**(1 / (1 - alpha)))
+    ys = cobb_douglas_output(ks, alpha, **params)
+    cs = ((theta - 1) / theta) * ys
 
-    Model assumes Cobb-Douglas production technology and Constant Relative Risk
-    Aversion (CRRA) preferences.  I then generate random parameter values
-    consistent with a constant consumption-output ratio (i.e., constant savings
-    rate).
+    return [ks, cs]
 
-    """
 
-    @staticmethod
-    def bcs_lower(t, k, c, k0, **params):
-        return [k - k0]
+def cobb_douglas_output(k, alpha, **params):
+    """Cobb-Douglas output (per unit effective labor supply)."""
+    return k**alpha
 
-    @staticmethod
-    def cobb_douglas_output(k, alpha, **params):
-        """Cobb-Douglas output (per unit effective labor supply)."""
-        return k**alpha
 
-    @staticmethod
-    def equilibrium_capital(g, n, alpha, delta, rho, theta, **params):
-        """Steady state value for capital stock (per unit effective labor)."""
-        return (alpha / (delta + rho + theta * g))**(1 / (1 - alpha))
+def cobb_douglas_mpk(k, alpha, **params):
+    """Marginal product of capital with Cobb-Douglas production."""
+    return alpha * k**(alpha - 1)
 
-    @classmethod
-    def equilibrium_consumption(cls, g, n, alpha, delta, rho, theta, **params):
-        """Steady state value for consumption (per unit effective labor)."""
-        kstar = cls.equilibrium_capital(g, n, alpha, delta, rho, theta)
-        return cls.cobb_douglas_output(kstar, alpha) - (g + n + delta) * kstar
 
-    @staticmethod
-    def pratt_arrow_risk_aversion(c, theta, **params):
-        """Pratt-Arrow absolute risk aversion for CRRA utility."""
-        return theta / c
+def equilibrium_capital(g, n, alpha, delta, rho, theta, **params):
+    """Steady state value for capital stock (per unit effective labor)."""
+    return (alpha / (delta + rho + theta * g))**(1 / (1 - alpha))
 
-    @staticmethod
-    def cobb_douglas_mpk(k, alpha, **params):
-        """Marginal product of capital with Cobb-Douglas production."""
-        return alpha * k**(alpha - 1)
 
-    @classmethod
-    def random_params(cls, sigma):
-        # random g, n, delta such that sum of these params is positive
-        g, n = stats.norm.rvs(0.05, sigma, size=2)
-        delta, = stats.lognorm.rvs(sigma, loc=g + n, size=1)
-        assert g + n + delta > 0
+def generate_random_params(scale, seed):
+    np.random.seed(seed)
 
-        # choose alpha consistent with theta > 1
-        alpha, = stats.uniform.rvs(scale=(g + delta) / (g + n + delta), size=1)
-        assert alpha < (delta + g) / (g + n + delta)
+    # random g, n, delta such that sum of these params is positive
+    g, n = stats.norm.rvs(0.05, scale, size=2)
+    delta, = stats.lognorm.rvs(scale, loc=g + n, size=1)
+    assert g + n + delta > 0
 
-        lower_bound = delta / (alpha * (g + n + delta) - g)
-        theta, = stats.lognorm.rvs(sigma, loc=lower_bound, size=1)
-        rho = alpha * theta * (g + n + delta) - (delta * theta * g)
-        print theta, lower_bound
-        assert rho > 0
+    # choose alpha consistent with theta > 1
+    alpha, = stats.uniform.rvs(scale=(g + delta) / (g + n + delta), size=1)
+    assert alpha < (delta + g) / (g + n + delta)
 
-        # choose k0 so that it is not too far from equilibrium
-        kstar = cls.equilibrium_capital(g, n, alpha, delta, rho, theta)
-        k0, = stats.uniform.rvs(0.5 * kstar, 1.5 * kstar, size=1)
-        assert k0 > 0
+    lower_bound = delta / (alpha * (g + n + delta) - g)
+    theta, = stats.lognorm.rvs(scale, loc=lower_bound, size=1)
+    rho = alpha * theta * (g + n + delta) - (delta * theta * g)
+    print theta, lower_bound
+    assert rho > 0
 
-        params = {'g': g, 'n': n, 'delta': delta, 'rho': rho, 'alpha': alpha,
-                  'theta': theta, 'k0': k0}
+    # choose k0 so that it is not too far from equilibrium
+    kstar = equilibrium_capital(g, n, alpha, delta, rho, theta)
+    k0, = stats.uniform.rvs(0.5 * kstar, 1.5 * kstar, size=1)
+    assert k0 > 0
 
-        return params
+    params = {'g': g, 'n': n, 'delta': delta, 'rho': rho, 'alpha': alpha,
+              'theta': theta, 'k0': k0}
 
-    @classmethod
-    def analytic_solution(cls, t, k0, g, n, alpha, delta, theta, **params):
-        """Analytic solution for model with Cobb-Douglas production."""
-        lmbda = (g + n + delta) * (1 - alpha)
-        ks = ((k0**(1 - alpha) * np.exp(-lmbda * t) +
-              (1 / (theta * (g + n + delta))) * (1 - np.exp(-lmbda * t)))**(1 / (1 - alpha)))
-        ys = cls.cobb_douglas_output(ks, alpha, **params)
-        cs = ((theta - 1) / theta) * ys
-        return [ks, cs]
+    return params
 
-    @classmethod
-    def bcs_upper(cls, t, k, c, **params):
-        return [c - cls.equilibrium_consumption(**params)]
 
-    @classmethod
-    def create_mesh(cls, basis_kwargs, num, problem):
-        # compute equilibrium values
-        cstar = cls.equilibrium_consumption(**problem.params)
-        kstar = cls.equilibrium_capital(**problem.params)
-        ystar = cls.cobb_douglas_output(kstar, **problem.params)
+def initial_mesh(domain, num, problem):
+    # compute equilibrium values
+    cstar = problem.equilibrium_consumption(**problem.params)
+    kstar = problem.equilibrium_capital(**problem.params)
+    ystar = problem.intensive_output(kstar, **problem.params)
 
-        # create the mesh for capital
-        ts = np.linspace(*basis_kwargs['domain'], num=num)
-        ks = kstar - (kstar - problem.params['k0']) * np.exp(-ts)
+    # create the mesh for capital
+    ts = np.linspace(domain[0], domain[1], num)
+    ks = kstar - (kstar - problem.params['k0']) * np.exp(-ts)
 
-        # create the mesh for consumption
-        s = 1 - (cstar / ystar)
-        ys = cls.cobb_douglas_output(ks, **problem.params)
-        cs = (1 - s) * ys
+    # create the mesh for consumption
+    s = 1 - (cstar / ystar)
+    y0 = cobb_douglas_output(problem.params['k0'], **problem.params)
+    c0 = (1 - s) * y0
+    cs = cstar - (cstar - c0) * np.exp(-ts)
 
-        return ts, ks, cs
+    return ts, ks, cs
 
-    @classmethod
-    def fit_initial_polys(cls, basis_kwargs, num, problem):
-        ts, ks, cs = cls.create_mesh(basis_kwargs, num, problem)
-        basis_poly = getattr(np.polynomial, basis_kwargs['kind'])
-        capital_poly = basis_poly.fit(ts, ks, basis_kwargs['degree'],
-                                      basis_kwargs['domain'])
-        consumption_poly = basis_poly.fit(ts, cs, basis_kwargs['degree'],
-                                          basis_kwargs['domain'])
-        return capital_poly, consumption_poly
 
-    @classmethod
-    def _c_dot(cls, t, k, c, g, delta, rho, theta, **params):
-        out = ((cls.cobb_douglas_mpk(k, **params) - delta - rho - theta * g) /
-               cls.pratt_arrow_risk_aversion(c, theta, **params))
-        return out
+def pratt_arrow_risk_aversion(t, c, theta, **params):
+    """Assume constant relative risk aversion"""
+    return theta
 
-    @classmethod
-    def _k_dot(cls, t, k, c, g, n, delta, **params):
-        return cls.cobb_douglas_output(k, **params) - c - (g + n + delta) * k
 
-    @classmethod
-    def rhs(cls, t, k, c, delta, g, n, rho, theta, **params):
-        """Equation of motion for capital (per unit effective labor supply)."""
-        out = [cls._k_dot(t, k, c, g, n, delta, **params),
-               cls._c_dot(t, k, c, g, delta, rho, theta, **params)]
-        return out
+random_seed = np.random.randint(2147483647)
+random_params = generate_random_params(0.1, random_seed)
+test_problem = models.RamseyCassKoopmansModel(pratt_arrow_risk_aversion,
+                                              cobb_douglas_output,
+                                              equilibrium_capital,
+                                              cobb_douglas_mpk,
+                                              random_params)
 
-    def setUp(self):
-        """Set up a Solow model to solve."""
-        self.bvp = bvp.TwoPointBVP(self.bcs_lower, self.bcs_upper, 1, 2,
-                                   self.random_params(0.1), self.rhs)
+polynomial_basis = basis_functions.PolynomialBasis()
+solver = solvers.Solver(polynomial_basis)
 
-    def _test_polynomial_collocation(self, basis_kwargs, num=1000):
-        """Test collocation solver using Chebyshev polynomials for basis."""
-        polynomial_basis = basis_functions.PolynomialBasis()
-        roots = polynomial_basis.nodes(**basis_kwargs)
-        initial_polys = self.fit_initial_polys(basis_kwargs, num, self.bvp)
-        initial_coefs = np.hstack([poly.coef for poly in initial_polys])
 
-        solver = solvers.Solver(polynomial_basis)
-        solution = solver.solve(basis_kwargs, initial_coefs, roots, self.bvp)
+def _test_polynomial_collocation(basis_kwargs, num=1000):
+    """Helper function for testing various kinds of polynomial collocation."""
+    ts, ks, cs = initial_mesh(basis_kwargs['domain'], 1000, test_problem)
+    k_poly = polynomial_basis.fit(ts, ks, **basis_kwargs)
+    c_poly = polynomial_basis.fit(ts, cs, **basis_kwargs)
+    initial_coefs = np.hstack([k_poly.coef, c_poly.coef])
 
-        # check that solver terminated successfully
-        self.assertTrue(solution.result.success, msg="Solver failed!")
+    solution = solver.solve(basis_kwargs, initial_coefs, test_problem)
 
-        # compute the residuals
-        ts, _, _ = self.create_mesh(basis_kwargs, num, self.bvp)
-        normed_residuals = solution.normalize_residuals(ts)
+    # check that solver terminated successfully
+    msg = "Solver failed!\nSeed: {}\nModel params: {}\n".format(random_seed, test_problem.params)
+    tools.assert_true(solution.result.success, msg=msg)
 
-        # check that residuals are close to zero on average
-        mesg = "Normed residuals:\n{}\n\nDictionary of model params: {}"
-        self.assertTrue(np.mean(normed_residuals) < 1e-6,
-                        msg=mesg.format(normed_residuals, self.bvp.params))
+    # compute the residuals
+    normed_residuals = solution.normalize_residuals(ts)
 
-        # check that the numerical and analytic solutions are close
-        numeric_soln = solution.evaluate_solution(ts)
-        analytic_soln = self.analytic_solution(ts, **self.bvp.params)
-        mesg = "Error:\n{}"
-        self.assertTrue(np.mean(numeric_soln[0] - analytic_soln[0]) < 1e-6,
-                        msg=mesg.format(numeric_soln[0] - analytic_soln[0]))
-        self.assertTrue(np.mean(numeric_soln[1] - analytic_soln[1]) < 1e-6,
-                        msg=mesg.format(numeric_soln[1] - analytic_soln[1]))
+    # check that residuals are close to zero on average
+    for normed_residual in normed_residuals:
+        tools.assert_true(np.mean(normed_residual) < 1e-6, msg=msg)
 
-    def test_chebyshev_collocation(self):
-        """Test collocation solver using Chebyshev polynomials for basis."""
-        basis_kwargs = {'kind': 'Chebyshev', 'degree': 50, 'domain': (0, 100)}
-        self._test_polynomial_collocation(basis_kwargs)
+    # check that the numerical and analytic solutions are close
+    numeric_solns = solution.evaluate_solution(ts)
+    analytic_solns = analytic_solution(ts, **test_problem.params)
 
-    def test_legendre_collocation(self):
-        """Test collocation solver using Legendre polynomials for basis."""
-        basis_kwargs = {'kind': 'Legendre', 'degree': 50, 'domain': (0, 100)}
-        self._test_polynomial_collocation(basis_kwargs)
+    for numeric_soln, analytic_soln in zip(numeric_solns, analytic_solns):
+        error = numeric_soln - analytic_soln
+        tools.assert_true(np.mean(error) < 1e-6, msg=msg)
+
+
+def test_chebyshev_collocation():
+    """Test collocation solver using Chebyshev polynomials for basis."""
+    basis_kwargs = {'kind': 'Chebyshev', 'degree': 50, 'domain': (0, 100)}
+    _test_polynomial_collocation(basis_kwargs)
+
+
+def test_legendre_collocation():
+    """Test collocation solver using Legendre polynomials for basis."""
+    basis_kwargs = {'kind': 'Legendre', 'degree': 50, 'domain': (0, 100)}
+    _test_polynomial_collocation(basis_kwargs)
