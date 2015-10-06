@@ -52,8 +52,9 @@ def generate_random_params(scale, seed):
     assert g + n + delta > 0
 
     # choose alpha consistent with theta > 1
-    alpha, = stats.uniform.rvs(scale=(g + delta) / (g + n + delta), size=1)
-    assert alpha < (delta + g) / (g + n + delta)
+    upper_bound = 1 if (g + delta) < 0 else min(1, (g + delta) / (g + n + delta))
+    alpha, = stats.uniform.rvs(scale=upper_bound, size=1)
+    assert 0 < alpha < upper_bound
 
     lower_bound = delta / (alpha * (g + n + delta) - g)
     theta, = stats.lognorm.rvs(scale, loc=lower_bound, size=1)
