@@ -60,5 +60,5 @@ class PolynomialBasis(basis_functions.BasisFunctionLike):
     def nodes(cls, degree, domain, kind):
         """Return optimal collocation nodes for some orthogonal polynomial."""
         basis_coefs = cls._basis_monomial_coefs(degree)
-        basis_poly = cls.basis_funcs_factory(basis_coefs, domain, kind)
+        basis_poly = cls.functions_factory(basis_coefs, domain, kind)
         return basis_poly.roots()

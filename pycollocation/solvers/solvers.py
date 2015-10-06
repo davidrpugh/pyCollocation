@@ -15,8 +15,7 @@ class SolverLike(object):
         """Splits an array into sections."""
         return np.split(coefs_array, indices_or_sections, axis)
 
-    @classmethod
-    def _approximate_soln(cls, basis_kwargs, coefs_list):
+    def _approximate_soln(self, basis_kwargs, coefs_list):
         """
         Parameters
         ----------
@@ -29,8 +28,8 @@ class SolverLike(object):
         basis_funcs : list(function)
 
         """
-        basis_derivs = cls._construct_basis_derivs(coefs_list, **basis_kwargs)
-        basis_funcs = cls._construct_basis_funcs(coefs_list, **basis_kwargs)
+        basis_derivs = self._construct_basis_derivs(coefs_list, **basis_kwargs)
+        basis_funcs = self._construct_basis_funcs(coefs_list, **basis_kwargs)
         return basis_derivs, basis_funcs
 
     @classmethod
@@ -70,17 +69,16 @@ class SolverLike(object):
             boundary_resids.append(evald_bcs_upper)
         return boundary_resids
 
-    @classmethod
-    def _compute_collocation_resids(cls, coefs_array, basis_kwargs, nodes, problem):
+    def _compute_collocation_resids(self, coefs_array, basis_kwargs, nodes, problem):
         """Return collocation residuals."""
-        coefs_list = cls._array_to_list(coefs_array, problem.number_odes)
-        basis_derivs, basis_funcs = cls._approximate_soln(basis_kwargs,
-                                                          coefs_list)
-        collocation_resids = cls._assess_approximate_soln(basis_derivs,
-                                                          basis_funcs,
-                                                          basis_kwargs,
-                                                          nodes,
-                                                          problem)
+        coefs_list = self._array_to_list(coefs_array, problem.number_odes)
+        basis_derivs, basis_funcs = self._approximate_soln(basis_kwargs,
+                                                           coefs_list)
+        collocation_resids = self._assess_approximate_soln(basis_derivs,
+                                                           basis_funcs,
+                                                           basis_kwargs,
+                                                           nodes,
+                                                           problem)
         return collocation_resids
 
     @classmethod
@@ -103,15 +101,13 @@ class SolverLike(object):
         evaluated_rhs = problem.rhs(nodes, *evald_basis_funcs, **problem.params)
         return evaluated_rhs
 
-    @classmethod
-    def _construct_basis_derivs(cls, coefs, **kwargs):
+    def _construct_basis_derivs(self, coefs, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
-        return [cls.basis_functions.derivatives_factory(coef, **kwargs) for coef in coefs]
+        return [self.basis_functions.derivatives_factory(coef, **kwargs) for coef in coefs]
 
-    @classmethod
-    def _construct_basis_funcs(cls, coefs, **kwargs):
+    def _construct_basis_funcs(self, coefs, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
-        return [cls.basis_functions.functions_factory(coef, **kwargs) for coef in coefs]
+        return [self.basis_functions.functions_factory(coef, **kwargs) for coef in coefs]
 
     @classmethod
     def _construct_residual_func(cls, basis_derivs, basis_funcs, problem):
@@ -123,8 +119,7 @@ class SolverLike(object):
 
         return residual_func
 
-    @classmethod
-    def _construct_soln(cls, basis_kwargs, nodes, problem, result):
+    def _construct_soln(self, basis_kwargs, nodes, problem, result):
         """
         Construct a representation of the solution to the boundary value problem.
 
@@ -140,16 +135,15 @@ class SolverLike(object):
         solution : SolutionLike
 
         """
-        soln_coefs = cls._array_to_list(result.x, problem.number_odes)
-        soln_derivs = cls._construct_basis_derivs(soln_coefs, **basis_kwargs)
-        soln_funcs = cls._construct_basis_funcs(soln_coefs, **basis_kwargs)
-        soln_residual_func = cls._construct_residual_func(soln_derivs, soln_funcs, problem)
+        soln_coefs = self._array_to_list(result.x, problem.number_odes)
+        soln_derivs = self._construct_basis_derivs(soln_coefs, **basis_kwargs)
+        soln_funcs = self._construct_basis_funcs(soln_coefs, **basis_kwargs)
+        soln_residual_func = self._construct_residual_func(soln_derivs, soln_funcs, problem)
         solution = solutions.Solution(basis_kwargs, soln_funcs, nodes, problem,
                                       soln_residual_func, result)
         return solution
 
-    @classmethod
-    def solve(cls, basis_kwargs, coefs_array, nodes, problem, **solver_options):
+    def solve(self, basis_kwargs, coefs_array, nodes, problem, **solver_options):
         """
         Solve a boundary value problem using orthogonal collocation.
 
@@ -176,11 +170,11 @@ class SolverLike(object):
         -----
 
         """
-        result = optimize.root(cls._compute_collocation_resids,
+        result = optimize.root(self._compute_collocation_resids,
                                x0=coefs_array,
                                args=(basis_kwargs, nodes, problem),
                                **solver_options)
-        solution = cls._construct_soln(basis_kwargs, nodes, problem, result)
+        solution = self._construct_soln(basis_kwargs, nodes, problem, result)
         return solution
 
 
