@@ -143,7 +143,7 @@ class SolverLike(object):
                                       soln_residual_func, result)
         return solution
 
-    def solve(self, basis_kwargs, coefs_array, nodes, problem, **solver_options):
+    def solve(self, basis_kwargs, coefs_array, problem, **solver_options):
         """
         Solve a boundary value problem using orthogonal collocation.
 
@@ -154,7 +154,6 @@ class SolverLike(object):
         coefs_array : numpy.ndarray
             Array of coefficients for basis functions defining the initial
             condition.
-        nodes : numpy.ndarray
         problem : bvp.TwoPointBVPLike
             A two-point boundary value problem (BVP) to solve.
         solver_options : dict
@@ -170,6 +169,7 @@ class SolverLike(object):
         -----
 
         """
+        nodes = self.basis_functions.nodes(**basis_kwargs)
         result = optimize.root(self._compute_collocation_resids,
                                x0=coefs_array,
                                args=(basis_kwargs, nodes, problem),

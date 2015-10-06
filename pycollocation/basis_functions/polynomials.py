@@ -20,14 +20,11 @@ class PolynomialBasis(basis_functions.BasisFunctionLike):
         return np.append(np.zeros(degree), 1)
 
     @classmethod
-    def _basis_polynomial_factory(cls, coef, domain, kind, deriv):
+    def _basis_polynomial_factory(cls, kind):
         """Return a polynomial given some coefficients."""
         valid_kind = cls._validate(kind)
         basis_polynomial = getattr(np.polynomial, valid_kind)
-        if not deriv:
-            return basis_polynomial(coef, domain)
-        else:
-            return basis_polynomial(coef, domain).deriv()
+        return basis_polynomial
 
     @classmethod
     def _validate(cls, kind):
@@ -45,7 +42,13 @@ class PolynomialBasis(basis_functions.BasisFunctionLike):
         orthogonal polynomial defined over a specific domain.
 
         """
-        return cls._basis_polynomial_factory(coef, domain, kind, True)
+        basis_polynomial = cls._basis_polynomial_factory(kind)
+        return basis_polynomial(coef, domain).deriv()
+
+    @classmethod
+    def fit(cls, ts, xs, degree, domain, kind):
+        basis_polynomial = cls._basis_polynomial_factory(kind)
+        return basis_polynomial.fit(ts, xs, degree, domain)
 
     @classmethod
     def functions_factory(cls, coef, domain, kind, **kwargs):
@@ -54,7 +57,8 @@ class PolynomialBasis(basis_functions.BasisFunctionLike):
         defined over a specific domain.
 
         """
-        return cls._basis_polynomial_factory(coef, domain, kind, False)
+        basis_polynomial = cls._basis_polynomial_factory(kind)
+        return basis_polynomial(coef, domain)
 
     @classmethod
     def nodes(cls, degree, domain, kind):
