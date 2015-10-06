@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from scipy import stats
 
+from .. import basis_functions
 from .. problems import bvp
 from .. import solvers
 
@@ -141,15 +142,13 @@ class RamseyModel(unittest.TestCase):
 
     def _test_polynomial_collocation(self, basis_kwargs, num=1000):
         """Test collocation solver using Chebyshev polynomials for basis."""
-        nodes = solvers.PolynomialSolver.collocation_nodes(**basis_kwargs)
+        polynomial_basis = basis_functions.PolynomialBasis()
+        roots = polynomial_basis.nodes(**basis_kwargs)
         initial_polys = self.fit_initial_polys(basis_kwargs, num, self.bvp)
-        capital_poly, consumption_poly = initial_polys
         initial_coefs = np.hstack([poly.coef for poly in initial_polys])
 
-        solution = solvers.PolynomialSolver.solve(basis_kwargs,
-                                                  initial_coefs,
-                                                  nodes,
-                                                  self.bvp)
+        solver = solvers.Solver(polynomial_basis)
+        solution = solver.solve(basis_kwargs, initial_coefs, roots, self.bvp)
 
         # check that solver terminated successfully
         self.assertTrue(solution.result.success, msg="Solver failed!")

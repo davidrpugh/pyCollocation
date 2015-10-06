@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from scipy import stats
 
+from .. import basis_functions
 from .. problems import ivp
 from .. import solvers
 
@@ -59,10 +60,10 @@ class SolowModel(unittest.TestCase):
         return ts, ks
 
     @classmethod
-    def fit_initial_poly(cls, basis_kwargs, num, problem):
+    def fit_initial_polys(cls, basis_kwargs, num, problem):
         ts, ks = cls.create_mesh(basis_kwargs, num, problem)
         basis_poly = getattr(np.polynomial, basis_kwargs['kind'])
-        return basis_poly.fit(ts, ks, basis_kwargs['degree'], basis_kwargs['domain'])
+        return [basis_poly.fit(ts, ks, basis_kwargs['degree'], basis_kwargs['domain'])]
 
     @classmethod
     def rhs(cls, t, k, delta, g, n, s, **params):
@@ -73,22 +74,21 @@ class SolowModel(unittest.TestCase):
         """Set up a Solow model to solve."""
         self.ivp = ivp.IVP(self.bcs_lower, 1, 1, self.random_params(0.1), self.rhs)
 
-    def _test_polynomial_collocation(self, basis_kwargs):
+    def _test_polynomial_collocation(self, basis_kwargs, num=1000):
         """Test collocation solver using Chebyshev polynomials for basis."""
-        nodes = solvers.PolynomialSolver.collocation_nodes(**basis_kwargs)
-        initial_poly = self.fit_initial_poly(basis_kwargs, 1000, self.ivp)
-        initial_coefs = initial_poly.coef
+        polynomial_basis = basis_functions.PolynomialBasis()
+        roots = polynomial_basis.nodes(**basis_kwargs)
+        initial_polys = self.fit_initial_polys(basis_kwargs, num, self.ivp)
+        initial_coefs = np.hstack([poly.coef for poly in initial_polys])
 
-        solution = solvers.PolynomialSolver.solve(basis_kwargs,
-                                                  initial_coefs,
-                                                  nodes,
-                                                  self.ivp)
+        solver = solvers.Solver(polynomial_basis)
+        solution = solver.solve(basis_kwargs, initial_coefs, roots, self.ivp)
 
         # check that solver terminated successfully
         self.assertTrue(solution.result.success, msg="Solver failed!")
 
         # compute the residuals
-        ts, _ = self.create_mesh(basis_kwargs, 1000, self.ivp)
+        ts, _ = self.create_mesh(basis_kwargs, num, self.ivp)
         normed_residuals = solution.normalize_residuals(ts)
 
         # check that residuals are close to zero on average
