@@ -1,3 +1,5 @@
+import functools
+
 import numpy as np
 from scipy import optimize
 
@@ -28,13 +30,12 @@ class SolverLike(object):
         basis_funcs : list(function)
 
         """
-        basis_derivs = self._construct_basis_derivs(coefs_list, **basis_kwargs)
-        basis_funcs = self._construct_basis_funcs(coefs_list, **basis_kwargs)
-        return basis_derivs, basis_funcs
+        derivs = self._construct_derivatives(coefs_list, **basis_kwargs)
+        funcs = self._construct_functions(coefs_list, **basis_kwargs)
+        return derivs, funcs
 
     @classmethod
-    def _assess_approximate_soln(cls, basis_derivs, basis_funcs, basis_kwargs,
-                                 nodes, problem):
+    def _assess_approximate_soln(cls, derivs, funcs, basis_kwargs, nodes, problem):
         """
         Parameters
         ----------
@@ -48,23 +49,23 @@ class SolverLike(object):
         resids : numpy.ndarray
 
         """
-        resid_func = cls._construct_residual_func(basis_derivs, basis_funcs, problem)
+        resid_func = cls._residual_function_factory(derivs, funcs, problem)
         interior_resids = resid_func(nodes)
-        boundary_resids = cls._compute_boundary_resids(basis_funcs, basis_kwargs, problem)
+        boundary_resids = cls._compute_boundary_resids(funcs, basis_kwargs, problem)
         resids = np.hstack(interior_resids + boundary_resids)
         return resids
 
     @classmethod
-    def _compute_boundary_resids(cls, basis_funcs, basis_kwargs, problem):
+    def _compute_boundary_resids(cls, funcs, basis_kwargs, problem):
         boundary_resids = []
         if problem.bcs_lower is not None:
             boundary_pt = basis_kwargs['domain'][0]
-            evald_basis_funcs = [func(boundary_pt) for func in basis_funcs]
+            evald_basis_funcs = [func(boundary_pt) for func in funcs]
             evald_bcs_lower = problem.bcs_lower(boundary_pt, *evald_basis_funcs, **problem.params)
             boundary_resids.append(evald_bcs_lower)
         if problem.bcs_upper is not None:
             boundary_pt = basis_kwargs['domain'][1]
-            evald_basis_funcs = [func(boundary_pt) for func in basis_funcs]
+            evald_basis_funcs = [func(boundary_pt) for func in funcs]
             evald_bcs_upper = problem.bcs_upper(boundary_pt, *evald_basis_funcs, **problem.params)
             boundary_resids.append(evald_bcs_upper)
         return boundary_resids
@@ -82,7 +83,7 @@ class SolverLike(object):
         return collocation_resids
 
     @classmethod
-    def _compute_rhs(cls, basis_funcs, nodes, problem):
+    def _compute_rhs(cls, funcs, nodes, problem):
         """
         Compute the value of the right-hand side (RHS) of the...
 
@@ -97,27 +98,27 @@ class SolverLike(object):
         evaluated_rhs : list(float)
 
         """
-        evald_basis_funcs = [func(nodes) for func in basis_funcs]
+        evald_basis_funcs = [func(nodes) for func in funcs]
         evaluated_rhs = problem.rhs(nodes, *evald_basis_funcs, **problem.params)
         return evaluated_rhs
 
-    def _construct_basis_derivs(self, coefs, **kwargs):
+    @classmethod
+    def _residual_function(cls, ts, derivs, funcs, problem):
+        evaluated_lhs = [deriv(ts) for deriv in derivs]
+        evaluated_rhs = cls._compute_rhs(funcs, ts, problem)
+        return [lhs - rhs for lhs, rhs in zip(evaluated_lhs, evaluated_rhs)]
+
+    @classmethod
+    def _residual_function_factory(cls, derivs, funcs, problem):
+        return functools.partial(cls._residual_function, derivs=derivs, funcs=funcs, problem=problem)
+
+    def _construct_derivatives(self, coefs, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
         return [self.basis_functions.derivatives_factory(coef, **kwargs) for coef in coefs]
 
-    def _construct_basis_funcs(self, coefs, **kwargs):
+    def _construct_functions(self, coefs, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
         return [self.basis_functions.functions_factory(coef, **kwargs) for coef in coefs]
-
-    @classmethod
-    def _construct_residual_func(cls, basis_derivs, basis_funcs, problem):
-
-        def residual_func(points):
-            evaluated_lhs = [deriv(points) for deriv in basis_derivs]
-            evaluated_rhs = cls._compute_rhs(basis_funcs, points, problem)
-            return [lhs - rhs for lhs, rhs in zip(evaluated_lhs, evaluated_rhs)]
-
-        return residual_func
 
     def _construct_soln(self, basis_kwargs, nodes, problem, result):
         """
@@ -136,9 +137,9 @@ class SolverLike(object):
 
         """
         soln_coefs = self._array_to_list(result.x, problem.number_odes)
-        soln_derivs = self._construct_basis_derivs(soln_coefs, **basis_kwargs)
-        soln_funcs = self._construct_basis_funcs(soln_coefs, **basis_kwargs)
-        soln_residual_func = self._construct_residual_func(soln_derivs, soln_funcs, problem)
+        soln_derivs = self._construct_derivatives(soln_coefs, **basis_kwargs)
+        soln_funcs = self._construct_functions(soln_coefs, **basis_kwargs)
+        soln_residual_func = self._residual_function_factory(soln_derivs, soln_funcs, problem)
         solution = solutions.Solution(basis_kwargs, soln_funcs, nodes, problem,
                                       soln_residual_func, result)
         return solution
