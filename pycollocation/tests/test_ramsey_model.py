@@ -139,12 +139,12 @@ class RamseyModel(unittest.TestCase):
         self.bvp = bvp.TwoPointBVP(self.bcs_lower, self.bcs_upper, 1, 2,
                                    self.random_params(0.1), self.rhs)
 
-    def _test_polynomial_collocation(self, basis_kwargs):
+    def _test_polynomial_collocation(self, basis_kwargs, num=1000):
         """Test collocation solver using Chebyshev polynomials for basis."""
         nodes = solvers.PolynomialSolver.collocation_nodes(**basis_kwargs)
-        initial_polys = self.fit_initial_polys(basis_kwargs, 1000, self.bvp)
+        initial_polys = self.fit_initial_polys(basis_kwargs, num, self.bvp)
         capital_poly, consumption_poly = initial_polys
-        initial_coefs = np.hstack([capital_poly.coef, consumption_poly.coef])
+        initial_coefs = np.hstack([poly.coef for poly in initial_polys])
 
         solution = solvers.PolynomialSolver.solve(basis_kwargs,
                                                   initial_coefs,
@@ -155,7 +155,7 @@ class RamseyModel(unittest.TestCase):
         self.assertTrue(solution.result.success, msg="Solver failed!")
 
         # compute the residuals
-        ts, _, _ = self.create_mesh(basis_kwargs, 1000, self.bvp)
+        ts, _, _ = self.create_mesh(basis_kwargs, num, self.bvp)
         normed_residuals = solution.normalize_residuals(ts)
 
         # check that residuals are close to zero on average
