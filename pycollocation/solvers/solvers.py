@@ -6,6 +6,10 @@ from . import solutions
 
 class SolverLike(object):
 
+    @property
+    def basis_functions(self):
+        return self._basis_functions
+
     @staticmethod
     def _array_to_list(coefs_array, indices_or_sections, axis=0):
         """Splits an array into sections."""
@@ -102,12 +106,12 @@ class SolverLike(object):
     @classmethod
     def _construct_basis_derivs(cls, coefs, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
-        return [cls.basis_derivs_factory(coef, **kwargs) for coef in coefs]
+        return [cls.basis_functions.derivatives_factory(coef, **kwargs) for coef in coefs]
 
     @classmethod
     def _construct_basis_funcs(cls, coefs, **kwargs):
         """Return a list of basis functions given a list of coefficients."""
-        return [cls.basis_funcs_factory(coef, **kwargs) for coef in coefs]
+        return [cls.basis_functions.functions_factory(coef, **kwargs) for coef in coefs]
 
     @classmethod
     def _construct_residual_func(cls, basis_derivs, basis_funcs, problem):
@@ -145,14 +149,6 @@ class SolverLike(object):
         return solution
 
     @classmethod
-    def basis_derivs_factory(cls, coef, **kwargs):
-        raise NotImplementedError
-
-    @classmethod
-    def basis_funcs_factory(cls, coef, **kwargs):
-        raise NotImplementedError
-
-    @classmethod
     def solve(cls, basis_kwargs, coefs_array, nodes, problem, **solver_options):
         """
         Solve a boundary value problem using orthogonal collocation.
@@ -186,3 +182,9 @@ class SolverLike(object):
                                **solver_options)
         solution = cls._construct_soln(basis_kwargs, nodes, problem, result)
         return solution
+
+
+class Solver(SolverLike):
+
+    def __init__(self, basis_functions):
+        self._basis_functions = basis_functions

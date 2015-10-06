@@ -2,8 +2,7 @@
 Objects imported here will live in the `pycollocation.solvers` namespace
 
 """
-from . bases import SolverLike
-from . polynomials import PolynomialSolver
+from . solvers import Solver, SolverLike
 from . solutions import SolutionLike, Solution
 
-__all__ = ["PolynomialSolver", "Solution", "SolutionLike", "SolverLike"]
+__all__ = ["Solver", "Solution", "SolutionLike", "SolverLike"]

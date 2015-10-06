@@ -7,10 +7,10 @@ either standard or orthogonal polynomials as basis functions.
 """
 import numpy as np
 
-from . import bases
+from . import basis_functions
 
 
-class PolynomialSolver(bases.SolverLike):
+class PolynomialBasis(basis_functions.BasisFunctionLike):
 
     _valid_kinds = ['Polynomial', 'Chebyshev', 'Legendre', 'Laguerre', 'Hermite']
 
@@ -39,7 +39,7 @@ class PolynomialSolver(bases.SolverLike):
             return kind
 
     @classmethod
-    def basis_derivs_factory(cls, coef, domain, kind, **kwargs):
+    def derivatives_factory(cls, coef, domain, kind, **kwargs):
         """
         Given some coefficients, return a the derivative of a certain kind of
         orthogonal polynomial defined over a specific domain.
@@ -48,7 +48,7 @@ class PolynomialSolver(bases.SolverLike):
         return cls._basis_polynomial_factory(coef, domain, kind, True)
 
     @classmethod
-    def basis_funcs_factory(cls, coef, domain, kind, **kwargs):
+    def functions_factory(cls, coef, domain, kind, **kwargs):
         """
         Given some coefficients, return a certain kind of orthogonal polynomial
         defined over a specific domain.
@@ -57,7 +57,7 @@ class PolynomialSolver(bases.SolverLike):
         return cls._basis_polynomial_factory(coef, domain, kind, False)
 
     @classmethod
-    def collocation_nodes(cls, degree, domain, kind):
+    def nodes(cls, degree, domain, kind):
         """Return optimal collocation nodes for some orthogonal polynomial."""
         basis_coefs = cls._basis_monomial_coefs(degree)
         basis_poly = cls.basis_funcs_factory(basis_coefs, domain, kind)
