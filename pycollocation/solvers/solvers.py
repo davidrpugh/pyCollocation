@@ -55,14 +55,6 @@ class SolverLike(object):
         return evald_rhs
 
     @classmethod
-    def _lower_boundary_residual_factory(cls, funcs, problem):
-        return functools.partial(cls._lower_boundary_residual, funcs, problem)
-
-    @classmethod
-    def _upper_boundary_residual_factory(cls, funcs, problem):
-        return functools.partial(cls._upper_boundary_residual, funcs, problem)
-
-    @classmethod
     def _interior_residuals(cls, derivs, funcs, problem, ts):
         evaluated_lhs = [deriv(ts) for deriv in derivs]
         evaluated_rhs = cls._evaluate_rhs(funcs, ts, problem)
@@ -71,6 +63,14 @@ class SolverLike(object):
     @classmethod
     def _interior_residuals_factory(cls, derivs, funcs, problem):
         return functools.partial(cls._interior_residuals, derivs, funcs, problem)
+
+    @classmethod
+    def _lower_boundary_residual_factory(cls, funcs, problem):
+        return functools.partial(cls._lower_boundary_residual, funcs, problem)
+
+    @classmethod
+    def _upper_boundary_residual_factory(cls, funcs, problem):
+        return functools.partial(cls._upper_boundary_residual, funcs, problem)
 
     def _assess_approximation(self, basis_kwargs, derivs, funcs, problem):
         """
