@@ -162,14 +162,14 @@ class SolverLike(object):
         """Return a list of functions given a list of coefficients."""
         return [self.basis_functions.functions_factory(coef, **kwargs) for coef in coefs]
 
-    def _solution_factory(self, basis_kwargs, problem, result):
+    def _solution_factory(self, basis_kwargs, coefs_array, problem, result):
         """
         Construct a representation of the solution to the boundary value problem.
 
         Parameters
         ----------
         basis_kwargs : dict(str : )
-        nodes : numpy.ndarray
+        coefs_array : numpy.ndarray
         problem : TwoPointBVPLike
         result : OptimizeResult
 
@@ -179,7 +179,7 @@ class SolverLike(object):
 
         """
         nodes = self.basis_functions.nodes(**basis_kwargs)
-        soln_coefs = self._array_to_list(result.x, problem.number_odes)
+        soln_coefs = self._array_to_list(coefs_array, problem.number_odes)
         soln_derivs = self._construct_derivatives(soln_coefs, **basis_kwargs)
         soln_funcs = self._construct_functions(soln_coefs, **basis_kwargs)
         soln_residual_func = self._interior_residuals_factory(soln_derivs, soln_funcs, problem)
@@ -251,7 +251,7 @@ class Solver(SolverLike):
                                x0=coefs_array,
                                args=(basis_kwargs, problem),
                                **solver_options)
-        solution = self._solution_factory(basis_kwargs, problem, result)
+        solution = self._solution_factory(basis_kwargs, result.x, problem, result)
         return solution
 
 
@@ -259,10 +259,6 @@ class LeastSquaresSolver(SolverLike):
 
     def __init__(self, basis_functions):
         self._basis_functions = basis_functions
-
-    def _compute_objective(self, coefs_array, basis_kwargs, problem):
-        residuals = self._compute_residuals(coefs_array, basis_kwargs, problem)
-        return 0.5 * np.sum(residuals**2)
 
     def solve(self, basis_kwargs, coefs_array, problem, **solver_options):
         """
@@ -290,9 +286,9 @@ class LeastSquaresSolver(SolverLike):
         -----
 
         """
-        result = optimize.minimize(self._compute_objective,
-                                   x0=coefs_array,
-                                   args=(basis_kwargs, problem),
-                                   **solver_options)
-        solution = self._solution_factory(basis_kwargs, problem, result)
+        result = optimize.leastsq(self._compute_residuals,
+                                  x0=coefs_array,
+                                  args=(basis_kwargs, problem),
+                                  **solver_options)
+        solution = self._solution_factory(basis_kwargs, result[0], problem, result)
         return solution
