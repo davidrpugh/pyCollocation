@@ -13,8 +13,8 @@ pyCollocation
    :target: https://pypi.python.org/pypi/pyCollocation/
 .. |Downloads| image:: https://img.shields.io/pypi/dm/pyCollocation.svg
    :target: https://pypi.python.org/pypi/pyCollocation/
-.. |DOI| image:: https://zenodo.org/badge/doi/10.5281/zenodo.20220.svg
-   :target: http://dx.doi.org/10.5281/zenodo.20220
+.. |DOI| .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.31910.svg
+   :target: http://dx.doi.org/10.5281/zenodo.31910
 .. |Documentation Status| image:: https://readthedocs.org/projects/pycollocation/badge/?version=latest
    :target: https://readthedocs.org/projects/pycollocation/?badge=latest
 
