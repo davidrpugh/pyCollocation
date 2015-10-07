@@ -53,9 +53,12 @@ There are a number of example notebooks that demonstrate how to use the library 
 
 - `Solow model`_ of economic growth
 - `Ramsey-Cass-Koopmans model`_ of optimal savings
+- Various `auctions models` (currently symmetric and asymmetric IPVP)
 
 .. _`Solow model` : https://github.com/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb
 .. _`Ramsey-Cass-Koopmans`: https://github.com/davidrpugh/pyCollocation/blob/master/examples/ramsey-cass-koopmans-model.ipynb
+.. _`auction models` : https://github.com/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb
+
 
 Physics
 ~~~~~~~
@@ -77,5 +80,7 @@ Ultimately I am hoping to contribute this package to either SciPy or QuantEcon, 
 - Built-in support for computing Jacobian matrix for the system of equations defined by the collocation residuals.  Given a user-supplied Jacobian for the BVP, one can apply the chain rule to construct the Jacobian matrix for system of equations defined by the collocation residuals.
 
 - Support for solving models with unknown parameters (similar to `scikits.bvp_solver`_). This would allow for the possibility to simultaneously solve and calibrate a model.
+
+- Support for free boundary conditions.  This comes up a lot in auction theory applications where the upper bounds on the bidder valuation distributions are unknown.
 
 .. _`scikits.bvp_solver` : https://github.com/jsalvatier/scikits.bvp_solver 
