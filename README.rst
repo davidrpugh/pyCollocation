@@ -53,7 +53,7 @@ There are a number of example notebooks that demonstrate how to use the library 
 
 - `Solow model`_ of economic growth
 - `Ramsey model`_ of optimal savings
-- Various `auctions models`_ (currently symmetric and asymmetric IPVP)
+- Various `auction models`_ (currently symmetric and asymmetric IPVP)
 
 .. _`Solow model` : https://github.com/davidrpugh/pyCollocation/blob/master/examples/solow-model.ipynb
 .. _`Ramsey model`: https://github.com/davidrpugh/pyCollocation/blob/master/examples/ramsey-cass-koopmans-model.ipynb
