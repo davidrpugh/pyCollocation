@@ -59,7 +59,6 @@ def generate_random_params(scale, seed):
     lower_bound = delta / (alpha * (g + n + delta) - g)
     theta, = stats.lognorm.rvs(scale, loc=lower_bound, size=1)
     rho = alpha * theta * (g + n + delta) - (delta * theta * g)
-    print theta, lower_bound
     assert rho > 0
 
     # choose k0 so that it is not too far from equilibrium
