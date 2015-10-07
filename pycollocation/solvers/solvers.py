@@ -7,6 +7,14 @@ from . import solutions
 
 
 class SolverLike(object):
+    """
+    Class describing the protocol the all SolverLike objects should satisfy.
+
+    Notes
+    -----
+    Subclasses should implement `solve` method as described below.
+
+    """
 
     @property
     def basis_functions(self):
@@ -205,15 +213,43 @@ class SolverLike(object):
         -----
 
         """
-        result = optimize.root(self._compute_residuals,
-                               x0=coefs_array,
-                               args=(basis_kwargs, problem),
-                               **solver_options)
-        solution = self._solution_factory(basis_kwargs, problem, result)
-        return solution
+        raise NotImplementedError
 
 
 class Solver(SolverLike):
 
     def __init__(self, basis_functions):
         self._basis_functions = basis_functions
+
+    def solve(self, basis_kwargs, coefs_array, problem, **solver_options):
+        """
+        Solve a boundary value problem using the collocation method.
+
+        Parameters
+        ----------
+        basis_kwargs : dict
+            Dictionary of keyword arguments used to build basis functions.
+        coefs_array : numpy.ndarray
+            Array of coefficients for basis functions defining the initial
+            condition.
+        problem : bvp.TwoPointBVPLike
+            A two-point boundary value problem (BVP) to solve.
+        solver_options : dict
+            Dictionary of options to pass to the non-linear equation solver.
+
+        Return
+        ------
+        solution: solutions.SolutionLike
+            An instance of the SolutionLike class representing the solution to
+            the two-point boundary value problem (BVP)
+
+        Notes
+        -----
+
+        """
+        result = optimize.root(self._compute_residuals,
+                               x0=coefs_array,
+                               args=(basis_kwargs, problem),
+                               **solver_options)
+        solution = self._solution_factory(basis_kwargs, problem, result)
+        return solution
