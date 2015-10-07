@@ -12,6 +12,7 @@ notifications:
 branches:
   only:
     - master
+    - develop
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -21,7 +22,7 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose pandas pip sympy
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose pip
   - pip install coveralls coverage
   - python setup.py install
 
