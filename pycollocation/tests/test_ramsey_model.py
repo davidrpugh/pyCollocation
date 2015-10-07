@@ -38,7 +38,7 @@ def cobb_douglas_mpk(k, alpha, **params):
     return alpha * k**(alpha - 1)
 
 
-def equilibrium_capital(g, n, alpha, delta, rho, theta, **params):
+def equilibrium_capital(alpha, delta, g, n, rho, theta, **params):
     """Steady state value for capital stock (per unit effective labor)."""
     return (alpha / (delta + rho + theta * g))**(1 / (1 - alpha))
 
