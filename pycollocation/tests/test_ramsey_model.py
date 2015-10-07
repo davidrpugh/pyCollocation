@@ -17,7 +17,7 @@ from .. import basis_functions
 from .. import solvers
 
 
-def analytic_solution(t, k0, g, n, alpha, delta, theta, **params):
+def analytic_solution(t, k0, alpha, delta, g, n, theta, **params):
     """Analytic solution for model with Cobb-Douglas production."""
     lmbda = (g + n + delta) * (1 - alpha)
     ks = ((k0**(1 - alpha) * np.exp(-lmbda * t) +
@@ -38,7 +38,7 @@ def cobb_douglas_mpk(k, alpha, **params):
     return alpha * k**(alpha - 1)
 
 
-def equilibrium_capital(g, n, alpha, delta, rho, theta, **params):
+def equilibrium_capital(alpha, delta, g, n, rho, theta, **params):
     """Steady state value for capital stock (per unit effective labor)."""
     return (alpha / (delta + rho + theta * g))**(1 / (1 - alpha))
 
@@ -59,7 +59,6 @@ def generate_random_params(scale, seed):
     lower_bound = delta / (alpha * (g + n + delta) - g)
     theta, = stats.lognorm.rvs(scale, loc=lower_bound, size=1)
     rho = alpha * theta * (g + n + delta) - (delta * theta * g)
-    print theta, lower_bound
     assert rho > 0
 
     # choose k0 so that it is not too far from equilibrium

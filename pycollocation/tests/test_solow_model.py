@@ -8,7 +8,7 @@ from .. import basis_functions
 from .. import solvers
 
 
-def analytic_solution(t, k0, g, n, s, alpha, delta, **params):
+def analytic_solution(t, k0, alpha, delta, g, n, s, **params):
     """Analytic solution for model with Cobb-Douglas production."""
     lmbda = (g + n + delta) * (1 - alpha)
     ks = (((s / (g + n + delta)) * (1 - np.exp(-lmbda * t)) +
