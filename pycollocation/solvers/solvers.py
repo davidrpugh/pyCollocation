@@ -54,7 +54,7 @@ class SolverLike(object):
         return boundary_residuals
 
     @classmethod
-    def _compute_interior_residuals(cls, basis_kwargs, derivs, funcs, nodes, problem):
+    def _compute_interior_residuals(cls, derivs, funcs, nodes, problem):
         interior_residuals = cls._interior_residuals_factory(derivs, funcs, problem)
         residuals = interior_residuals(nodes)
         return residuals
@@ -97,7 +97,7 @@ class SolverLike(object):
     def _upper_boundary_residual_factory(cls, funcs, problem):
         return functools.partial(cls._upper_boundary_residual, funcs, problem)
 
-    def _assess_approximation(self, basis_kwargs, boundary_points, derivs, funcs, nodes, problem):
+    def _assess_approximation(self, boundary_points, derivs, funcs, nodes, problem):
         """
         Parameters
         ----------
@@ -110,8 +110,7 @@ class SolverLike(object):
         resids : numpy.ndarray
 
         """
-        interior_residuals = self._compute_interior_residuals(basis_kwargs,
-                                                              derivs, funcs,
+        interior_residuals = self._compute_interior_residuals(derivs, funcs,
                                                               nodes, problem)
         boundary_residuals = self._compute_boundary_residuals(boundary_points,
                                                               funcs, problem)
@@ -134,10 +133,9 @@ class SolverLike(object):
         """
         coefs_list = self._array_to_list(coefs_array, problem.number_odes)
         derivs, funcs = self._construct_approximation(basis_kwargs, coefs_list)
-        resids = self._assess_approximation(basis_kwargs, boundary_points,
-                                            derivs, funcs, nodes, problem)
+        resids = self._assess_approximation(boundary_points, derivs, funcs,
+                                            nodes, problem)
         return resids
-
 
     def _construct_approximation(self, basis_kwargs, coefs_list):
         """
@@ -186,7 +184,9 @@ class SolverLike(object):
         soln_coefs = self._array_to_list(coefs_array, problem.number_odes)
         soln_derivs = self._construct_derivatives(soln_coefs, **basis_kwargs)
         soln_funcs = self._construct_functions(soln_coefs, **basis_kwargs)
-        soln_residual_func = self._interior_residuals_factory(soln_derivs, soln_funcs, problem)
+        soln_residual_func = self._interior_residuals_factory(soln_derivs,
+                                                              soln_funcs,
+                                                              problem)
         solution = solutions.Solution(basis_kwargs, soln_funcs, nodes, problem,
                                       soln_residual_func, result)
         return solution
@@ -267,7 +267,8 @@ class LeastSquaresSolver(SolverLike):
     def __init__(self, basis_functions):
         self._basis_functions = basis_functions
 
-    def solve(self, basis_kwargs, boundary_points, coefs_array, nodes, problem, **solver_options):
+    def solve(self, basis_kwargs, boundary_points, coefs_array, nodes, problem,
+              **solver_options):
         """
         Solve a boundary value problem using the collocation method.
 
