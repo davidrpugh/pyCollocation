@@ -114,8 +114,10 @@ def _test_polynomial_collocation(basis_kwargs, boundary_points, num=1000):
     k_poly = polynomial_basis.fit(ts, ks, **basis_kwargs)
     c_poly = polynomial_basis.fit(ts, cs, **basis_kwargs)
     initial_coefs = np.hstack([k_poly.coef, c_poly.coef])
+    nodes = polynomial_basis.roots(**basis_kwargs)
 
-    solution = solver.solve(basis_kwargs, boundary_points, initial_coefs, test_problem)
+    solution = solver.solve(basis_kwargs, boundary_points, initial_coefs,
+                            nodes, test_problem)
 
     # check that solver terminated successfully
     msg = "Solver failed!\nSeed: {}\nModel params: {}\n".format(random_seed, test_problem.params)

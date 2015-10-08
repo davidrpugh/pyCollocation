@@ -69,8 +69,10 @@ def _test_polynomial_collocation(basis_kwargs, boundary_points, num=1000):
     ts, ks = initial_mesh(*boundary_points, num=num, problem=test_problem)
     k_poly = polynomial_basis.fit(ts, ks, **basis_kwargs)
     initial_coefs = k_poly.coef
+    nodes = polynomial_basis.roots(**basis_kwargs)
 
-    solution = solver.solve(basis_kwargs, boundary_points, initial_coefs, test_problem)
+    solution = solver.solve(basis_kwargs, boundary_points, initial_coefs,
+                            nodes, test_problem)
 
     # check that solver terminated successfully
     msg = "Solver failed!\nSeed: {}\nModel params: {}\n"
