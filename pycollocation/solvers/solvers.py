@@ -262,10 +262,7 @@ class Solver(SolverLike):
         return solution
 
 
-class LeastSquaresSolver(SolverLike):
-
-    def __init__(self, basis_functions):
-        self._basis_functions = basis_functions
+class LeastSquaresSolver(Solver):
 
     def solve(self, basis_kwargs, boundary_points, coefs_array, nodes, problem,
               **solver_options):
