@@ -18,28 +18,53 @@ class SolverLike(object):
 
     @property
     def basis_functions(self):
-        """
+        r"""
         Functions used to approximate the solution to a boundary value problem.
 
         :getter: Return the current basis functions.
-        :type: basis_functions.BasisFunctions
+        :type: `basis_functions.BasisFunctions`
 
         """
         return self._basis_functions
 
     @staticmethod
     def _array_to_list(coefs_array, indices_or_sections, axis=0):
-        """Splits an array into sections."""
+        """Split an array into a list of arrays."""
         return np.split(coefs_array, indices_or_sections, axis)
 
     @staticmethod
-    def _lower_boundary_residual(funcs, problem, ts):
-        evald_funcs = [func(ts) for func in funcs]
+    def _evaluate_functions(funcs, points):
+        """Evaluate a list of functions at some points."""
+        return [func(points) for func in funcs]
+
+    @classmethod
+    def _evaluate_rhs(cls, funcs, nodes, problem):
+        """
+        Compute the value of the right-hand side of the system of ODEs.
+
+        Parameters
+        ----------
+        basis_funcs : list(function)
+        nodes : numpy.ndarray
+        problem : TwoPointBVPLike
+
+        Returns
+        -------
+        evaluated_rhs : list(float)
+
+        """
+        evald_funcs = cls._evaluate_functions(funcs, nodes)
+        evald_rhs = problem.rhs(nodes, *evald_funcs, **problem.params)
+        return evald_rhs
+
+    @classmethod
+    def _lower_boundary_residual(cls, funcs, problem, ts):
+        evald_funcs = cls._evaluate_functions(funcs, ts)
         return problem.bcs_lower(ts, *evald_funcs, **problem.params)
 
-    @staticmethod
-    def _upper_boundary_residual(funcs, problem, ts):
-        evald_funcs = [func(ts) for func in funcs]
+    @classmethod
+    def _upper_boundary_residual(cls, funcs, problem, ts):
+        evald_funcs = cls._evaluate_functions(funcs, ts)
         return problem.bcs_upper(ts, *evald_funcs, **problem.params)
 
     @classmethod
@@ -60,28 +85,8 @@ class SolverLike(object):
         return residuals
 
     @classmethod
-    def _evaluate_rhs(cls, funcs, nodes, problem):
-        """
-        Compute the value of the right-hand side of the system of ODEs.
-
-        Parameters
-        ----------
-        basis_funcs : list(function)
-        nodes : numpy.ndarray
-        problem : TwoPointBVPLike
-
-        Returns
-        -------
-        evaluated_rhs : list(float)
-
-        """
-        evald_basis_funcs = [func(nodes) for func in funcs]
-        evald_rhs = problem.rhs(nodes, *evald_basis_funcs, **problem.params)
-        return evald_rhs
-
-    @classmethod
     def _interior_residuals(cls, derivs, funcs, problem, ts):
-        evaluated_lhs = [deriv(ts) for deriv in derivs]
+        evaluated_lhs = cls._evaluate_functions(derivs, ts)
         evaluated_rhs = cls._evaluate_rhs(funcs, ts, problem)
         return [lhs - rhs for lhs, rhs in zip(evaluated_lhs, evaluated_rhs)]
 
