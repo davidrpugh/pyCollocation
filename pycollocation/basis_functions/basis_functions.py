@@ -7,7 +7,3 @@ class BasisFunctionLike(object):
     @classmethod
     def functions_factory(cls, coef, *args, **kwargs):
         raise NotImplementedError
-
-    @classmethod
-    def nodes(cls, *args, **kwargs):
-        raise NotImplementedError
