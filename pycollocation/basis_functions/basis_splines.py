@@ -39,8 +39,3 @@ class BSplineBasis(basis_functions.BasisFunctionLike):
 
         """
         return cls._basis_spline_factory(coef, degree, knots, 0, ext)
-
-    @classmethod
-    def nodes(cls, knots, **kwargs):
-        """Possibly just wrap interpolate.splprep?"""
-        return knots
