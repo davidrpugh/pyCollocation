@@ -1,0 +1,33 @@
+sudo: false
+
+language: python
+
+python:
+  - 2.7
+  - 3.4
+
+notifications:
+  email: false
+
+branches:
+  only:
+    - master
+    - develop
+
+before_install:
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+
+install:
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose pip
+  - pip install coveralls coverage
+  - python setup.py install
+
+script:
+  - nosetests --with-coverage --cover-package=pycollocation
+
+after_success:
+  - coveralls

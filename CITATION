@@ -1,0 +1,8 @@
+@Manual{pyCollocation,
+        title = {\pkg{pyCollocation}: \proglang{Python} library for solving boundary value problems},
+        author = {David R. Pugh},
+        organization = {pyCollocation},
+        year = {2015},
+        doi = {10.5281/zenodo.16761},
+        url = {https://github.com/davidrpugh/pyCollocation}
+        }
