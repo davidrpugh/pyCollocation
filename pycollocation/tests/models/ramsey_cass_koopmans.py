@@ -90,13 +90,18 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
     def _breakeven_investment(k, delta, g, n, **params):
         return (g + n + delta) * k
 
-    @staticmethod
-    def _c_tilde_dot(t, k, c_tilde, ARA, mpk, A0, delta, g, rho, **params):
-        return ((mpk(k, **params) - delta - rho) / (A0 * np.exp(g * t) * ARA(t, A0 * np.exp(g * t) * c_tilde, A0, g, **params))) - g * c_tilde
+    @classmethod
+    def _c_tilde_dot(cls, t, k, c_tilde, ARA, mpk, A0, delta, g, rho, **params):
+        A = cls._technology(t, A0, g)
+        return ((mpk(k, **params) - delta - rho) / (A * ARA(t, A * c_tilde, **params))) - g * c_tilde
 
     @staticmethod
     def _initial_condition(t, k, c_tilde, A0, K0, N0, **params):
         return [k - (K0 / (A0 * N0))]
+
+    @staticmethod
+    def _technology(t, A0, g):
+        return A0 * np.exp(g * t)
 
     @classmethod
     def _k_dot(cls, t, k, c_tilde, f, delta, g, n, **params):
