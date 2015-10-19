@@ -1,5 +1,6 @@
 import functools
 
+import numpy as np
 
 from ... import problems
 
@@ -25,13 +26,13 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
 
     """
 
-    def __init__(self, A, f, k_star, mpk, params):
+    def __init__(self, ARA, f, k_star, mpk, params):
         """
         Initialize an instance of the RamseyCassKoopmans class.
 
         Parameters
         ----------
-        A : function
+        ARA : function
             Pratt-Arrow absolute risk aversion function.
         f : function
             Output (per unit effective labor supply).
@@ -47,7 +48,7 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
         self._equilibrium_capital = k_star
         self._intensive_output = f
         self._marginal_product_capital = mpk
-        self._pratt_arrow_risk_aversion = A
+        self._pratt_arrow_risk_aversion = ARA
 
         # construct the terminal condition
         c_star = self._c_star_factory(k_star)
@@ -55,7 +56,7 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
         self._equilibrium_consumption = c_star
 
         # construct the RHS of the system of ODEs
-        rhs = self._rhs_factory(A, f, mpk)
+        rhs = self._rhs_factory(ARA, f, mpk)
 
         super(RamseyCassKoopmansModel, self).__init__(self._initial_condition,
                                                       terminal_condition, 1, 2,
@@ -82,40 +83,40 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
         return self._pratt_arrow_risk_aversion
 
     @staticmethod
-    def _actual_investment(k, c, f, **params):
-        return f(k, **params) - c
+    def _actual_investment(k, c_tilde, f, **params):
+        return f(k, **params) - c_tilde
 
     @staticmethod
     def _breakeven_investment(k, delta, g, n, **params):
         return (g + n + delta) * k
 
     @staticmethod
-    def _c_dot(t, k, c, A, mpk, delta, g, rho, **params):
-        return (((mpk(k, **params) - delta - rho) / A(t, c, **params)) - g) * c
+    def _c_tilde_dot(t, k, c_tilde, ARA, mpk, A0, delta, g, rho, **params):
+        return ((mpk(k, **params) - delta - rho) / (A0 * np.exp(g * t) * ARA(t, A0 * np.exp(g * t) * c_tilde, A0, g, **params))) - g * c_tilde
 
     @staticmethod
-    def _initial_condition(t, k, c, k0, **params):
-        return [k - k0]
+    def _initial_condition(t, k, c_tilde, A0, K0, N0, **params):
+        return [k - (K0 / (A0 * N0))]
 
     @classmethod
-    def _k_dot(cls, t, k, c, f, delta, g, n, **params):
-        k_dot = (cls._actual_investment(k, c, f, **params) -
+    def _k_dot(cls, t, k, c_tilde, f, delta, g, n, **params):
+        k_dot = (cls._actual_investment(k, c_tilde, f, **params) -
                  cls._breakeven_investment(k, delta, g, n))
         return k_dot
 
     @classmethod
-    def _ramsey_model(cls, t, k, c, A, f, mpk, delta, g, n, rho, **params):
-        out = [cls._k_dot(t, k, c, f, delta, g, n, **params),
-               cls._c_dot(t, k, c, A, mpk, delta, g, rho, **params)]
+    def _ramsey_model(cls, t, k, c_tilde, ARA, f, mpk, A0, delta, g, n, rho, **params):
+        out = [cls._k_dot(t, k, c_tilde, f, delta, g, n, **params),
+               cls._c_tilde_dot(t, k, c_tilde, ARA, mpk, A0, delta, g, rho, **params)]
         return out
 
     @classmethod
-    def _rhs_factory(cls, A, f, mpk):
-        return functools.partial(cls._ramsey_model, A=A, f=f, mpk=mpk)
+    def _rhs_factory(cls, ARA, f, mpk):
+        return functools.partial(cls._ramsey_model, ARA=ARA, f=f, mpk=mpk)
 
     @staticmethod
-    def _terminal_condition(t, k, c, c_star, **params):
-        return [c - c_star(**params)]
+    def _terminal_condition(t, k, c_tilde, c_star, **params):
+        return [c_tilde - c_star(**params)]
 
     @classmethod
     def _terminal_condition_factory(cls, c_star):
