@@ -83,36 +83,36 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
         return self._pratt_arrow_risk_aversion
 
     @staticmethod
-    def _actual_investment(k, c_tilde, f, **params):
-        return f(k, **params) - c_tilde
+    def _actual_investment(k_tilde, c_tilde, f, **params):
+        return f(k_tilde, **params) - c_tilde
 
     @staticmethod
-    def _breakeven_investment(k, delta, g, n, **params):
-        return (g + n + delta) * k
+    def _breakeven_investment(k_tilde, delta, g, n, **params):
+        return (g + n + delta) * k_tilde
 
     @classmethod
-    def _c_tilde_dot(cls, t, k, c_tilde, ARA, mpk, A0, delta, g, rho, **params):
+    def _c_tilde_dot(cls, t, k_tilde, c_tilde, ARA, mpk, A0, delta, g, rho, **params):
         A = cls._technology(t, A0, g)
-        return ((mpk(k, **params) - delta - rho) / (A * ARA(t, A * c_tilde, **params))) - g * c_tilde
+        return ((mpk(k_tilde, **params) - delta - rho) / (A * ARA(t, A * c_tilde, **params))) - g * c_tilde
 
     @staticmethod
-    def _initial_condition(t, k, c_tilde, A0, K0, N0, **params):
-        return [k - (K0 / (A0 * N0))]
+    def _initial_condition(t, k_tilde, c_tilde, A0, K0, N0, **params):
+        return [k_tilde - (K0 / (A0 * N0))]
 
     @staticmethod
     def _technology(t, A0, g):
         return A0 * np.exp(g * t)
 
     @classmethod
-    def _k_dot(cls, t, k, c_tilde, f, delta, g, n, **params):
-        k_dot = (cls._actual_investment(k, c_tilde, f, **params) -
-                 cls._breakeven_investment(k, delta, g, n))
+    def _k_dot(cls, t, k_tilde, c_tilde, f, delta, g, n, **params):
+        k_dot = (cls._actual_investment(k_tilde, c_tilde, f, **params) -
+                 cls._breakeven_investment(k_tilde, delta, g, n))
         return k_dot
 
     @classmethod
-    def _ramsey_model(cls, t, k, c_tilde, ARA, f, mpk, A0, delta, g, n, rho, **params):
-        out = [cls._k_dot(t, k, c_tilde, f, delta, g, n, **params),
-               cls._c_tilde_dot(t, k, c_tilde, ARA, mpk, A0, delta, g, rho, **params)]
+    def _ramsey_model(cls, t, k_tilde, c_tilde, ARA, f, mpk, A0, delta, g, n, rho, **params):
+        out = [cls._k_dot(t, k_tilde, c_tilde, f, delta, g, n, **params),
+               cls._c_tilde_dot(t, k_tilde, c_tilde, ARA, mpk, A0, delta, g, rho, **params)]
         return out
 
     @classmethod
@@ -120,7 +120,7 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
         return functools.partial(cls._ramsey_model, ARA=ARA, f=f, mpk=mpk)
 
     @staticmethod
-    def _terminal_condition(t, k, c_tilde, c_star, **params):
+    def _terminal_condition(t, k_tilde, c_tilde, c_star, **params):
         return [c_tilde - c_star(**params)]
 
     @classmethod
@@ -128,9 +128,9 @@ class RamseyCassKoopmansModel(problems.TwoPointBVP):
         return functools.partial(cls._terminal_condition, c_star=c_star)
 
     def _c_star(self, k_star, **params):
-        k = k_star(**params)
-        c_star = (self.intensive_output(k, **params) -
-                  self._breakeven_investment(k, **params))
+        k_tilde = k_star(**params)
+        c_star = (self.intensive_output(k_tilde, **params) -
+                  self._breakeven_investment(k_tilde, **params))
         return c_star
 
     def _c_star_factory(self, k_star):
