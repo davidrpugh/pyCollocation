@@ -27,10 +27,14 @@ CLASSIFIERS = ['Development Status :: 3 - Alpha',
                'Topic :: Scientific/Engineering',
                ]
 
+PACKAGES = ['pycollocation', 'pycollocation.basis_functions',
+            'pycollocation.problems', 'pycollocation.solvers',
+            'pycollocation.tests', 'pycollocation.tests.models']
+
 setup(
     name="pycollocation",
-    packages=['pycollocation'],
-    version='0.5-alpha',
+    packages=PACKAGES,
+    version='0.6.0-alpha',
     description=DESCRIPTION,
     long_description=read('README.rst'),
     license="MIT License",

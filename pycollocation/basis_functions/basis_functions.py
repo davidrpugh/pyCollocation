@@ -5,9 +5,5 @@ class BasisFunctionLike(object):
         raise NotImplementedError
 
     @classmethod
-    def functions_factory(cls, coef, domain, kind, **kwargs):
-        raise NotImplementedError
-
-    @classmethod
-    def nodes(cls, *args, **kwargs):
+    def functions_factory(cls, coef, *args, **kwargs):
         raise NotImplementedError

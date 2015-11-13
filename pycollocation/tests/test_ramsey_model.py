@@ -17,8 +17,9 @@ from .. import basis_functions
 from .. import solvers
 
 
-def analytic_solution(t, k0, alpha, delta, g, n, theta, **params):
+def analytic_solution(t, A0, alpha, delta, g, K0, n, N0, theta, **params):
     """Analytic solution for model with Cobb-Douglas production."""
+    k0 = K0 / (A0 * N0)
     lmbda = (g + n + delta) * (1 - alpha)
     ks = ((k0**(1 - alpha) * np.exp(-lmbda * t) +
           (1 / (theta * (g + n + delta))) * (1 - np.exp(-lmbda * t)))**(1 / (1 - alpha)))
@@ -61,30 +62,35 @@ def generate_random_params(scale, seed):
     rho = alpha * theta * (g + n + delta) - (delta * theta * g)
     assert rho > 0
 
-    # choose k0 so that it is not too far from equilibrium
+    # normalize A0 and N0
+    A0 = 1.0
+    N0 = A0
+
+    # choose K0 so that it is not too far from balanced growth path
     kstar = equilibrium_capital(g, n, alpha, delta, rho, theta)
-    k0, = stats.uniform.rvs(0.5 * kstar, 1.5 * kstar, size=1)
-    assert k0 > 0
+    K0, = stats.uniform.rvs(0.5 * kstar, 1.5 * kstar, size=1)
+    assert K0 > 0
 
     params = {'g': g, 'n': n, 'delta': delta, 'rho': rho, 'alpha': alpha,
-              'theta': theta, 'k0': k0}
+              'theta': theta, 'K0': K0, 'A0': A0, 'N0': N0}
 
     return params
 
 
-def initial_mesh(domain, num, problem):
+def initial_mesh(t, T, num, problem):
     # compute equilibrium values
     cstar = problem.equilibrium_consumption(**problem.params)
     kstar = problem.equilibrium_capital(**problem.params)
     ystar = problem.intensive_output(kstar, **problem.params)
 
     # create the mesh for capital
-    ts = np.linspace(domain[0], domain[1], num)
-    ks = kstar - (kstar - problem.params['k0']) * np.exp(-ts)
+    ts = np.linspace(t, T, num)
+    k0 = problem.params['K0'] / (problem.params['A0'] * problem.params['N0'])
+    ks = kstar - (kstar - k0) * np.exp(-ts)
 
     # create the mesh for consumption
     s = 1 - (cstar / ystar)
-    y0 = cobb_douglas_output(problem.params['k0'], **problem.params)
+    y0 = cobb_douglas_output(k0, **problem.params)
     c0 = (1 - s) * y0
     cs = cstar - (cstar - c0) * np.exp(-ts)
 
@@ -93,7 +99,7 @@ def initial_mesh(domain, num, problem):
 
 def pratt_arrow_risk_aversion(t, c, theta, **params):
     """Assume constant relative risk aversion"""
-    return theta
+    return theta / c
 
 
 random_seed = np.random.randint(2147483647)
@@ -108,14 +114,16 @@ polynomial_basis = basis_functions.PolynomialBasis()
 solver = solvers.Solver(polynomial_basis)
 
 
-def _test_polynomial_collocation(basis_kwargs, num=1000):
+def _test_polynomial_collocation(basis_kwargs, boundary_points, num=1000):
     """Helper function for testing various kinds of polynomial collocation."""
-    ts, ks, cs = initial_mesh(basis_kwargs['domain'], 1000, test_problem)
+    ts, ks, cs = initial_mesh(*boundary_points, num=num, problem=test_problem)
     k_poly = polynomial_basis.fit(ts, ks, **basis_kwargs)
     c_poly = polynomial_basis.fit(ts, cs, **basis_kwargs)
     initial_coefs = np.hstack([k_poly.coef, c_poly.coef])
+    nodes = polynomial_basis.roots(**basis_kwargs)
 
-    solution = solver.solve(basis_kwargs, initial_coefs, test_problem)
+    solution = solver.solve(basis_kwargs, boundary_points, initial_coefs,
+                            nodes, test_problem)
 
     # check that solver terminated successfully
     msg = "Solver failed!\nSeed: {}\nModel params: {}\n".format(random_seed, test_problem.params)
@@ -139,11 +147,13 @@ def _test_polynomial_collocation(basis_kwargs, num=1000):
 
 def test_chebyshev_collocation():
     """Test collocation solver using Chebyshev polynomials for basis."""
-    basis_kwargs = {'kind': 'Chebyshev', 'degree': 50, 'domain': (0, 100)}
-    _test_polynomial_collocation(basis_kwargs)
+    boundary_points = (0, 100)
+    basis_kwargs = {'kind': 'Chebyshev', 'degree': 50, 'domain': boundary_points}
+    _test_polynomial_collocation(basis_kwargs, boundary_points)
 
 
 def test_legendre_collocation():
     """Test collocation solver using Legendre polynomials for basis."""
-    basis_kwargs = {'kind': 'Legendre', 'degree': 50, 'domain': (0, 100)}
-    _test_polynomial_collocation(basis_kwargs)
+    boundary_points = (0, 100)
+    basis_kwargs = {'kind': 'Legendre', 'degree': 50, 'domain': boundary_points}
+    _test_polynomial_collocation(basis_kwargs, boundary_points)
