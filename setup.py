@@ -34,7 +34,7 @@ PACKAGES = ['pycollocation', 'pycollocation.basis_functions',
 setup(
     name="pycollocation",
     packages=PACKAGES,
-    version='0.5.0-alpha',
+    version='0.6.0-alpha',
     description=DESCRIPTION,
     long_description=read('README.rst'),
     license="MIT License",
