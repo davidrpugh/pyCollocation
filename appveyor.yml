@@ -1,7 +1,6 @@
 install:
   - curl http://repo.continuum.io/archive/Anaconda3-4.1.1-Windows-x86_64.exe
-  - Anaconda3-4.1.1-Windows-x86_64.exe
-  
+
 build_script:
   - "python setup.py build"
 
