@@ -3,7 +3,7 @@ install:
   - Anaconda3-4.1.1-Windows-x86_64.exe
   
 build_script:
-  - python setup.py build"
+  - "python setup.py build"
 
 test_script:
-  - python setup.py nosetests"
+  - "python setup.py nosetests"
