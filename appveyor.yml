@@ -1,5 +1,6 @@
 install:
-  - ps: curl http://repo.continuum.io/archive/Anaconda3-4.1.1-Windows-x86_64.exe
+  - ps: curl https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe
+  - Miniconda3-latest-Windows-x86_64.exe
 
 build_script:
   - "python setup.py build"
